@@ -7,12 +7,14 @@ import { Switch } from "@multica/ui/components/ui/switch";
 import { Label } from "@multica/ui/components/ui/label";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAppI18n } from "@multica/core/i18n";
 import { useCurrentWorkspace } from "@multica/core/paths";
 import { workspaceKeys } from "@multica/core/workspace/queries";
 import { api } from "@multica/core/api";
 import type { Workspace } from "@multica/core/types";
 
 export function LabsTab() {
+  const { t } = useAppI18n();
   const workspace = useCurrentWorkspace();
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
@@ -35,7 +37,7 @@ export function LabsTab() {
       );
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : "Failed to update setting",
+        e instanceof Error ? e.message : t("settings", "failedToUpdateSetting"),
       );
     } finally {
       setSaving(false);

@@ -9,6 +9,7 @@ import { runtimeListOptions, runtimeKeys } from "@multica/core/runtimes/queries"
 import { useUpdatableRuntimeIds } from "@multica/core/runtimes/hooks";
 import { deriveRuntimeHealth } from "@multica/core/runtimes";
 import { useWSEvent } from "@multica/core/realtime";
+import { useAppI18n, type AppDict } from "@multica/core/i18n";
 import { Button } from "@multica/ui/components/ui/button";
 import { Input } from "@multica/ui/components/ui/input";
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
@@ -39,27 +40,27 @@ const HEALTH_ORDER: HealthFilter[] = [
 // internals of the sweeper — those live in the redesign doc.
 const HEALTH_CHIP: Record<
   Exclude<HealthFilter, "all">,
-  { label: string; dot: string; description: string }
+  { labelKey: string; dot: string; descriptionKey: string }
 > = {
   online: {
-    label: "Online",
+    labelKey: "online",
     dot: "bg-success",
-    description: "Heartbeat received in the last 45s. Ready to dispatch tasks.",
+    descriptionKey: "onlineDesc",
   },
   recently_lost: {
-    label: "Recently lost",
+    labelKey: "recentlyLost",
     dot: "bg-warning",
-    description: "Lost contact under 5 minutes ago — often a brief network blip.",
+    descriptionKey: "recentlyLostDesc",
   },
   offline: {
-    label: "Offline",
+    labelKey: "offline",
     dot: "bg-muted-foreground/40",
-    description: "No heartbeat for 5+ minutes. Restart the daemon or investigate the host.",
+    descriptionKey: "offlineDesc",
   },
   about_to_gc: {
-    label: "About to GC",
+    labelKey: "aboutToGc",
     dot: "bg-destructive",
-    description: "Offline 6+ days. Auto-deleted at 7 days unless it reconnects.",
+    descriptionKey: "aboutToGcDesc",
   },
 };
 
@@ -183,7 +184,7 @@ export function RuntimesPage({ topSlot, bootstrapping }: RuntimesPageProps = {})
               total={scopedTotal}
             />
             {filtered.length === 0 ? (
-              <NoMatchesState search={search} healthFilter={healthFilter} scope={scope} bootstrapping={bootstrapping} />
+              <NoMatchesState search={search} bootstrapping={bootstrapping} />
             ) : (
               <RuntimeList
                 runtimes={filtered}
@@ -214,42 +215,37 @@ function PageHeaderBar({
   totalCount: number;
   onConnectRemote: () => void;
 }) {
+  const { t } = useAppI18n();
+
   return (
     <PageHeader className="justify-between px-5">
       <div className="flex items-center gap-2">
         <Server className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-sm font-medium">Runtimes</h1>
+        <h1 className="text-sm font-medium">{t("runtimes", "runtimes")}</h1>
         {totalCount > 0 && (
           <span className="font-mono text-xs tabular-nums text-muted-foreground/70">
             {totalCount}
           </span>
         )}
         <p className="ml-2 hidden text-xs text-muted-foreground md:block">
-          Machines and cloud workers running CLI sessions for your agents.{" "}
+          {t("runtimes", "pageDesc")}{" "}
           <a
             href="https://multica.ai/docs/runtimes"
             target="_blank"
             rel="noopener noreferrer"
             className="underline decoration-muted-foreground/30 underline-offset-4 transition-colors hover:text-foreground"
           >
-            Learn more →
+            {t("runtimes", "learnMore")}
           </a>
         </p>
       </div>
       <Button type="button" size="sm" onClick={onConnectRemote}>
         <Plus className="h-3 w-3" />
-        Connect remote machine
+        {t("runtimes", "connectRemoteMachine")}
       </Button>
     </PageHeader>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Intro block — sits between the page header and the table card. Mirrors
-// Skills' two-paragraph pattern: a one-liner plus a brand-accented callout
-// pinning down a single non-obvious fact about the surface.
-// ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Card toolbar — search + scope toggle + live indicator. Skills puts its
@@ -268,6 +264,8 @@ function CardToolbar({
   scope: RuntimeFilter;
   setScope: (v: RuntimeFilter) => void;
 }) {
+  const { t } = useAppI18n();
+
   return (
     <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
       <div className="relative">
@@ -275,7 +273,7 @@ function CardToolbar({
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search runtimes…"
+          placeholder={t("runtimes", "searchRuntimes")}
           className="h-8 w-64 pl-8 text-sm"
         />
       </div>
@@ -288,12 +286,12 @@ function CardToolbar({
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success/60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
               </span>
-              Live
+              {t("runtimes", "live")}
             </div>
           }
         />
         <TooltipContent side="top">
-          Real-time updates · offline detection up to 75s
+          {t("runtimes", "liveTooltip")}
         </TooltipContent>
       </Tooltip>
     </div>
@@ -307,6 +305,8 @@ function ScopeSegment({
   value: RuntimeFilter;
   onChange: (v: RuntimeFilter) => void;
 }) {
+  const { t } = useAppI18n();
+
   // Mine first — that's the default selection and the more frequent
   // scope (your own runtimes), so it lives in the leading slot. Mirrors
   // the Agents page convention.
@@ -320,7 +320,7 @@ function ScopeSegment({
             : "text-muted-foreground hover:text-foreground"
         }`}
       >
-        Mine
+        {t("runtimes", "mine")}
       </button>
       <button
         onClick={() => onChange("all")}
@@ -330,7 +330,7 @@ function ScopeSegment({
             : "text-muted-foreground hover:text-foreground"
         }`}
       >
-        All
+        {t("runtimes", "all")}
       </button>
     </div>
   );
@@ -353,19 +353,23 @@ function FilterChipsRow({
   healthCounts: Record<Exclude<HealthFilter, "all">, number>;
   total: number;
 }) {
+  const { t } = useAppI18n();
+
   return (
     <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
       {HEALTH_ORDER.map((key) => {
         const count = key === "all" ? total : healthCounts[key];
         const visual = key === "all" ? null : HEALTH_CHIP[key];
         const description =
-          key === "all" ? "All runtimes in this view" : visual!.description;
+          key === "all"
+            ? t("runtimes", "allRuntimesDesc")
+            : t("runtimes", visual!.descriptionKey as keyof AppDict["runtimes"]);
         return (
           <HealthChip
             key={key}
             active={healthFilter === key}
             onClick={() => setHealthFilter(key)}
-            label={visual?.label ?? "All"}
+            label={visual ? t("runtimes", visual.labelKey as any) : t("runtimes", "all")}
             count={count}
             dotClass={visual?.dot}
             description={description}
@@ -430,15 +434,16 @@ function HealthChip({
 // ---------------------------------------------------------------------------
 
 function EmptyState({ onConnectRemote }: { onConnectRemote: () => void }) {
+  const { t } = useAppI18n();
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
         <Server className="h-6 w-6 text-muted-foreground" />
       </div>
-      <h2 className="mt-4 text-base font-semibold">No runtimes yet</h2>
+      <h2 className="mt-4 text-base font-semibold">{t("runtimes", "noRuntimesYet")}</h2>
       <p className="mt-1 max-w-md text-sm text-muted-foreground">
-        Desktop auto-scans your local machine. For AWS EC2 or other remote
-        machines, connect them using the setup wizard.
+        {t("runtimes", "emptyDesc")}
       </p>
       <Button
         type="button"
@@ -447,7 +452,7 @@ function EmptyState({ onConnectRemote }: { onConnectRemote: () => void }) {
         className="mt-5"
       >
         <Plus className="h-3 w-3" />
-        Connect remote machine
+        {t("runtimes", "connectRemoteMachine")}
       </Button>
     </div>
   );
@@ -461,40 +466,36 @@ function EmptyState({ onConnectRemote }: { onConnectRemote: () => void }) {
 
 function NoMatchesState({
   search,
-  healthFilter,
-  scope,
   bootstrapping,
 }: {
   search: string;
-  healthFilter: HealthFilter;
-  scope: RuntimeFilter;
   bootstrapping?: boolean;
 }) {
+  const { t } = useAppI18n();
+
   if (bootstrapping) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-16 text-center">
         <Server className="h-8 w-8 animate-pulse text-muted-foreground/40" />
-        <p className="text-sm text-muted-foreground">Starting local runtime…</p>
+        <p className="text-sm text-muted-foreground">{t("runtimes", "startingRuntime")}</p>
         <p className="max-w-xs text-xs text-muted-foreground/70">
-          This usually takes a few seconds. Your daemon is registering with the workspace.
+          {t("runtimes", "startingDesc")}
         </p>
       </div>
     );
   }
 
   const hasSearch = search.length > 0;
-  const hasHealthFilter = healthFilter !== "all";
-  const hasScope = scope === "mine";
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-16 text-center text-muted-foreground">
       <Search className="h-8 w-8 text-muted-foreground/40" />
-      <p className="text-sm">No matches</p>
+      <p className="text-sm">{t("runtimes", "noMatches")}</p>
       <p className="max-w-xs text-xs">
         {hasSearch
-          ? `No runtimes match "${search}"${hasHealthFilter || hasScope ? " in this filter" : ""}.`
-          : "No runtimes match this filter."}{" "}
-        Try widening the scope or clearing filters.
+          ? `No runtimes match "${search}"`
+          : t("runtimes", "noMatchesFilter")}{" "}
+        {t("runtimes", "wideningHint")}
       </p>
     </div>
   );

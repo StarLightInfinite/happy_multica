@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { RuntimeUsage } from "@multica/core/types";
+import { useAppI18n } from "@multica/core/i18n";
 import { estimateCost } from "../../utils";
 
 // 26 weeks (~6 months) gives the heatmap real presence in the wider chart
@@ -9,8 +10,6 @@ import { estimateCost } from "../../utils";
 const HEATMAP_WEEKS = 26;
 const CELL_SIZE = 16;
 const CELL_GAP = 3;
-const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
-const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // Cells use the brand-derived chart-1 hue with descending opacity instead
 // of a neutral foreground fade, so the heatmap reads as part of the same
@@ -28,8 +27,8 @@ function fmtMoney(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
-function fmtDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleString("en", {
+function fmtDate(iso: string, locale: string): string {
+  return new Date(iso + "T00:00:00").toLocaleString(locale, {
     month: "short",
     day: "numeric",
   });
@@ -46,6 +45,8 @@ interface Insights {
 }
 
 export function ActivityHeatmap({ usage }: { usage: RuntimeUsage[] }) {
+  const { t, locale } = useAppI18n();
+
   const { cells, monthLabels, insights } = useMemo(() => {
     // Sum priced cost per day. Cost (not tokens) gives the colour scale a
     // financial meaning that lines up with the rest of the page — a "hot"
@@ -104,7 +105,7 @@ export function ActivityHeatmap({ usage }: { usage: RuntimeUsage[] }) {
       const month = new Date(c.date + "T00:00:00").getMonth();
       if (month !== lastMonth && c.dayOfWeek === 0) {
         months.push({
-          label: new Date(c.date + "T00:00:00").toLocaleString("en", {
+          label: new Date(c.date + "T00:00:00").toLocaleString(locale, {
             month: "short",
           }),
           week: c.week,
@@ -135,8 +136,11 @@ export function ActivityHeatmap({ usage }: { usage: RuntimeUsage[] }) {
     let busyDayAvg = 0;
     let quietDayName: string | null = null;
     let quietDayAvg = Number.POSITIVE_INFINITY;
+    const weekdayKeys = [
+      "sun", "mon", "tue", "wed", "thu", "fri", "sat",
+    ] as const;
     weekdayAvg.forEach((avg, i) => {
-      const name = WEEKDAY_NAMES[i] ?? "";
+      const name = t("runtimes", weekdayKeys[i]!);
       if (avg > busyDayAvg) {
         busyDayAvg = avg;
         busyDayName = name;
@@ -165,11 +169,19 @@ export function ActivityHeatmap({ usage }: { usage: RuntimeUsage[] }) {
     };
 
     return { cells: cellsWithLevel, monthLabels: months, insights };
-  }, [usage]);
+  }, [usage, locale, t]);
 
   const labelWidth = 28;
   const svgWidth = labelWidth + HEATMAP_WEEKS * (CELL_SIZE + CELL_GAP);
   const svgHeight = 14 + 7 * (CELL_SIZE + CELL_GAP);
+
+  // Build day labels array: empty for Sun/Tue/Thu/Sat, translated for Mon/Wed/Fri
+  const dayLabelKeys = [
+    "sun", "mon", "tue", "wed", "thu", "fri", "sat",
+  ] as const;
+  const dayLabels = dayLabelKeys.map((key, i) =>
+    i === 1 || i === 3 || i === 5 ? t("runtimes", key) : "",
+  );
 
   // Vertical stack: heatmap centered up top, insights as a 4-cell stat
   // strip below (separated by a hairline). Stacking guarantees the parent
@@ -192,7 +204,7 @@ export function ActivityHeatmap({ usage }: { usage: RuntimeUsage[] }) {
                 {m.label}
               </text>
             ))}
-            {DAY_LABELS.map((label, i) =>
+            {dayLabels.map((label, i) =>
               label ? (
                 <text
                   key={i}
@@ -218,14 +230,14 @@ export function ActivityHeatmap({ usage }: { usage: RuntimeUsage[] }) {
               >
                 <title>
                   {c.date}:{" "}
-                  {c.cost > 0 ? `$${c.cost.toFixed(2)}` : "No activity"}
+                  {c.cost > 0 ? `$${c.cost.toFixed(2)}` : t("runtimes", "noActivity")}
                 </title>
               </rect>
             ))}
           </svg>
         </div>
         <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <span>Less</span>
+          <span>{t("runtimes", "less")}</span>
           {[0, 1, 2, 3, 4].map((level) => (
             <div
               key={level}
@@ -233,11 +245,11 @@ export function ActivityHeatmap({ usage }: { usage: RuntimeUsage[] }) {
               style={{ backgroundColor: getHeatmapColor(level) }}
             />
           ))}
-          <span>More</span>
+          <span>{t("runtimes", "more")}</span>
         </div>
       </div>
 
-      <InsightsRow insights={insights} />
+      <InsightsRow insights={insights} t={t} />
     </div>
   );
 }
@@ -245,7 +257,7 @@ export function ActivityHeatmap({ usage }: { usage: RuntimeUsage[] }) {
 // Horizontal stat strip beneath the heatmap. Mirrors the page-top KPI
 // hero pattern (label → big value → sub) but at smaller scale to stay
 // secondary. 4 columns on desktop, 2 on narrow screens.
-function InsightsRow({ insights }: { insights: Insights }) {
+function InsightsRow({ insights, t }: { insights: Insights; t: ReturnType<typeof useAppI18n>["t"] }) {
   const {
     busiestDay,
     busyDayName,
@@ -258,21 +270,24 @@ function InsightsRow({ insights }: { insights: Insights }) {
   return (
     <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3 sm:grid-cols-4">
       <Insight
-        label="Busiest day"
-        value={busiestDay ? fmtDate(busiestDay.date) : "—"}
+        label={t("runtimes", "busiestDay")}
+        value={busiestDay ? fmtDate(busiestDay.date, "en") : "—"}
         sub={busiestDay ? fmtMoney(busiestDay.cost) : null}
       />
       <Insight
-        label="Most active weekday"
+        label={t("runtimes", "mostActiveWeekday")}
         value={busyDayName ?? "—"}
         sub={busyDayName ? `avg ${fmtMoney(busyDayAvg)}` : null}
       />
       <Insight
-        label="Quietest weekday"
+        label={t("runtimes", "quietestWeekday")}
         value={quietDayName ?? "—"}
         sub={quietDayName ? `avg ${fmtMoney(quietDayAvg)}` : null}
       />
-      <Insight label={`${windowDays}-day total`} value={fmtMoney(totalCost)} />
+      <Insight
+        label={`${windowDays}-day total`}
+        value={fmtMoney(totalCost)}
+      />
     </dl>
   );
 }

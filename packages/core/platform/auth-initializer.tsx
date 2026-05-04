@@ -92,7 +92,12 @@ export function AuthInitializer({
           qc.setQueryData(workspaceKeys.list(), wsList);
         })
         .catch((err) => {
-          logger.error("cookie auth init failed", err);
+          // 401 is expected for unauthenticated users — not an error
+          if (err?.status === 401) {
+            logger.info("no active session, redirecting to login");
+          } else {
+            logger.error("cookie auth init failed", err);
+          }
           onAuthFailure();
         });
       return;

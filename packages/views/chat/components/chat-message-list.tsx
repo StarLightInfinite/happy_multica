@@ -16,8 +16,9 @@ import { taskMessagesOptions } from "@multica/core/chat/queries";
 import { Markdown } from "@multica/views/common/markdown";
 import type { AgentAvailability } from "@multica/core/agents";
 import type { ChatMessage, ChatPendingTask, TaskMessagePayload, TaskFailureReason } from "@multica/core/types";
+import { useAppI18n } from "@multica/core/i18n";
 import type { ChatTimelineItem } from "@multica/core/chat";
-import { failureReasonLabel } from "../../agents/components/tabs/task-failure";
+import { failureReasonKeys } from "../../agents/components/tabs/task-failure";
 import { TaskStatusPill } from "./task-status-pill";
 import { formatElapsedMs } from "../lib/format";
 
@@ -231,12 +232,12 @@ function FailureBubble({
   timeline: ChatTimelineItem[];
   elapsedMs?: number | null;
 }) {
+  const { t } = useAppI18n();
   const [open, setOpen] = useState(false);
-  // Map the back-end enum to copy via the shared label table; an unknown
-  // reason (e.g. a future enum value the front-end doesn't ship yet)
-  // falls back to a generic "Task failed" so we never render a bare slug.
   const label =
-    failureReasonLabel[reason as TaskFailureReason] ?? "Task failed";
+    failureReasonKeys[reason as TaskFailureReason]
+      ? t("agents", failureReasonKeys[reason as TaskFailureReason] as "executionError")
+      : t("agents", "executionError");
 
   return (
     <div className="w-full space-y-1.5">

@@ -56,11 +56,11 @@ export const ListRow = memo(function ListRow({
   return (
     <IssueActionsContextMenu issue={issue}>
       <div
-        className={`group/row flex h-9 items-center gap-2 px-4 text-sm transition-colors hover:not-data-[popup-open]:bg-accent/60 data-[popup-open]:bg-accent ${
+        className={`group/row flex min-h-[44px] items-center gap-2 px-2 sm:px-4 text-sm transition-colors hover:not-data-[popup-open]:bg-accent/60 data-[popup-open]:bg-accent ${
           selected ? "bg-accent/30" : ""
         }`}
       >
-        <div className="relative flex shrink-0 items-center justify-center w-4 h-4">
+        <div className="relative flex shrink-0 items-center justify-center w-8 h-8">
           <PriorityIcon
             priority={issue.priority}
             className={selected ? "hidden" : "group-hover/row:hidden"}
@@ -76,7 +76,7 @@ export const ListRow = memo(function ListRow({
         </div>
         <AppLink
           href={p.issueDetail(issue.id)}
-          className="flex flex-1 items-center gap-2 min-w-0"
+          className="flex flex-1 items-center gap-2 min-w-0 py-1.5"
         >
           <span className="w-16 shrink-0 text-xs text-muted-foreground">
             {issue.identifier}

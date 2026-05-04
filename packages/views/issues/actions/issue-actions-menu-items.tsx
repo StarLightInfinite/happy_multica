@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppI18n } from "@multica/core/i18n";
 import {
   ArrowDown,
   ArrowUp,
@@ -82,6 +83,7 @@ export function IssueActionsMenuItems({
   primitives: P,
   onDeletedNavigateTo,
 }: IssueActionsMenuItemsProps) {
+  const { t } = useAppI18n();
   const {
     members,
     agents,
@@ -231,11 +233,11 @@ export function IssueActionsMenuItems({
         ) : (
           <Pin className="h-3.5 w-3.5" />
         )}
-        {isPinned ? "Unpin from sidebar" : "Pin to sidebar"}
+        {isPinned ? t("issues", "unpinFromSidebar") : t("issues", "pinToSidebar")}
       </P.Item>
       <P.Item onClick={copyLink}>
         <Link2 className="h-3.5 w-3.5" />
-        Copy link
+        {t("issues", "copyLink")}
       </P.Item>
 
       <P.Separator />
@@ -245,20 +247,20 @@ export function IssueActionsMenuItems({
       <P.Sub>
         <P.SubTrigger>
           <MoreHorizontal className="h-3.5 w-3.5" />
-          More
+          {t("common", "more")}
         </P.SubTrigger>
         <P.SubContent>
           <P.Item onClick={openCreateSubIssue}>
             <Plus className="h-3.5 w-3.5" />
-            Create sub-issue
+            {t("issues", "createSubIssue")}
           </P.Item>
           <P.Item onClick={openSetParent}>
             <ArrowUp className="h-3.5 w-3.5" />
-            Set parent issue...
+            {t("issues", "setParentIssue")}
           </P.Item>
           <P.Item onClick={openAddChild}>
             <ArrowDown className="h-3.5 w-3.5" />
-            Add sub-issue...
+            {t("issues", "addSubIssue")}
           </P.Item>
         </P.SubContent>
       </P.Sub>
@@ -270,7 +272,7 @@ export function IssueActionsMenuItems({
         onClick={() => openDeleteConfirm({ onDeletedNavigateTo })}
       >
         <Trash2 className="h-3.5 w-3.5" />
-        Delete issue
+        {t("issues", "deleteIssue")}
       </P.Item>
     </>
   );

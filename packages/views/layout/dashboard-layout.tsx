@@ -6,6 +6,7 @@ import { ModalRegistry } from "../modals/registry";
 import { AppSidebar } from "./app-sidebar";
 import { DashboardGuard } from "./dashboard-guard";
 import { WorkspacePresencePrefetch } from "./workspace-presence-prefetch";
+import { AppI18nProvider } from "@multica/core/i18n";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -24,22 +25,24 @@ export function DashboardLayout({
   loadingIndicator,
 }: DashboardLayoutProps) {
   return (
-    <DashboardGuard
-      loadingFallback={
-        <div className="flex h-svh items-center justify-center">
-          {loadingIndicator}
-        </div>
-      }
-    >
-      <SidebarProvider className="h-svh">
-        <WorkspacePresencePrefetch />
-        <AppSidebar searchSlot={searchSlot} />
-        <SidebarInset className="relative overflow-hidden">
-          {children}
-          <ModalRegistry />
-          {extra}
-        </SidebarInset>
-      </SidebarProvider>
-    </DashboardGuard>
+    <AppI18nProvider initialLocale="zh">
+      <DashboardGuard
+        loadingFallback={
+          <div className="flex h-svh items-center justify-center">
+            {loadingIndicator}
+          </div>
+        }
+      >
+        <SidebarProvider className="h-svh">
+          <WorkspacePresencePrefetch />
+          <AppSidebar searchSlot={searchSlot} />
+          <SidebarInset className="relative overflow-hidden">
+            {children}
+            <ModalRegistry />
+            {extra}
+          </SidebarInset>
+        </SidebarProvider>
+      </DashboardGuard>
+    </AppI18nProvider>
   );
 }

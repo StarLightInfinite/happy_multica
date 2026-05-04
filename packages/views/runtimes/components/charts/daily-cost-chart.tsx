@@ -11,6 +11,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@multica/ui/components/ui/chart";
+import { useAppI18n } from "@multica/core/i18n";
 import type { DailyCostStackData } from "../../utils";
 
 // Three-segment stack (input / output / cache write) — keeps the user's
@@ -22,18 +23,23 @@ import type { DailyCostStackData } from "../../utils";
 // Series → CSS chart token: stack reads bottom-up as chart-1 (deepest brand
 // blue, "input") → chart-2 (mid) → chart-3 (lightest, "cache write"), so the
 // visual depth maps directly to "primary cost driver → secondary".
-export const costStackConfig = {
-  input: { label: "Input", color: "var(--chart-1)" },
-  output: { label: "Output", color: "var(--chart-2)" },
-  cacheWrite: { label: "Cache write", color: "var(--chart-3)" },
-} satisfies ChartConfig;
+export function useCostStackConfig(): ChartConfig {
+  const { t } = useAppI18n();
+  return {
+    input: { label: t("runtimes", "inputLabel"), color: "var(--chart-1)" },
+    output: { label: t("runtimes", "outputLabel"), color: "var(--chart-2)" },
+    cacheWrite: { label: t("runtimes", "cacheWriteLabel"), color: "var(--chart-3)" },
+  };
+}
 
 export function DailyCostChart({ data }: { data: DailyCostStackData[] }) {
+  const config = useCostStackConfig();
+
   // No internal empty-state — the parent decides what to show in place of
   // the chart (often a diagnostic explaining *why* there's no cost). Letting
   // recharts render an empty axis would be both ugly and uninformative.
   return (
-    <ChartContainer config={costStackConfig} className="aspect-[3/1] w-full">
+    <ChartContainer config={config} className="aspect-[3/1] w-full">
       <BarChart data={data} margin={{ left: 0, right: 0, top: 4, bottom: 0 }}>
         <CartesianGrid vertical={false} />
         <XAxis

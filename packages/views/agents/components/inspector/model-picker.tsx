@@ -5,23 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 import { runtimeModelsOptions } from "@multica/core/runtimes";
 import { Input } from "@multica/ui/components/ui/input";
+import { useAppI18n } from "@multica/core/i18n";
 import {
   PickerItem,
   PropertyPicker,
 } from "../../../issues/components/pickers";
 import { CHIP_CLASS } from "./chip";
 
-/**
- * Inline model picker for the agent inspector. Lighter cousin of
- * `ModelDropdown` (which is used in the create-agent dialog) — same data
- * source via `runtimeModelsOptions`, but renders inside a PropertyPicker so
- * it fits a single PropRow. Drops the "select a runtime first" state because
- * the inspector only renders this picker after a runtime is bound.
- *
- * Unsupported providers (e.g. hermes, which reads its own config) render an
- * inert italic "Managed by runtime" label instead of a clickable picker —
- * the back-end ignores agent.model for those runtimes anyway.
- */
 export function ModelPicker({
   runtimeId,
   runtimeOnline,
@@ -32,10 +22,10 @@ export function ModelPicker({
   runtimeId: string | null;
   runtimeOnline: boolean;
   value: string;
-  /** When false, render a static read-only display and skip the popover. */
   canEdit?: boolean;
   onChange: (next: string) => Promise<void> | void;
 }) {
+  const { t } = useAppI18n();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -43,9 +33,6 @@ export function ModelPicker({
     runtimeModelsOptions(runtimeOnline ? runtimeId : null),
   );
   const supported = modelsQuery.data?.supported ?? true;
-  // Memoise the model list so every downstream useMemo gets a stable
-  // reference; `?? []` would mint a fresh array on every render and
-  // invalidate filters needlessly.
   const models = useMemo(
     () => modelsQuery.data?.models ?? [],
     [modelsQuery.data],
@@ -75,12 +62,12 @@ export function ModelPicker({
   if (!supported && !modelsQuery.isLoading) {
     return (
       <span className="truncate italic text-muted-foreground">
-        Managed by runtime
+        {t("agents", "managedByRuntime")}
       </span>
     );
   }
 
-  const triggerLabel = value || "Default";
+  const triggerLabel = value || t("agents", "defaultModel");
   const triggerTitle = `Model · ${triggerLabel}`;
 
   if (!canEdit) {
@@ -117,7 +104,7 @@ export function ModelPicker({
         <div className="p-1.5">
           <Input
             autoFocus
-            placeholder="Search or type a model ID"
+            placeholder={t("agents", "searchModel")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-7 text-xs"
@@ -128,7 +115,7 @@ export function ModelPicker({
       {modelsQuery.isLoading && (
         <div className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" />
-          Discovering models…
+          {t("agents", "discoveringModels")}
         </div>
       )}
 
@@ -138,9 +125,6 @@ export function ModelPicker({
             key={m.id}
             selected={m.id === value}
             onClick={() => void select(m.id)}
-            // Tooltip carries the canonical model id even when the chip
-            // shows the friendlier label, so users can always see what
-            // string actually ships to the agent.
             tooltip={m.label !== m.id ? `${m.label} · ${m.id}` : m.id}
           >
             <div className="min-w-0 flex-1">
@@ -148,7 +132,7 @@ export function ModelPicker({
                 <span className="truncate font-medium">{m.label}</span>
                 {m.default && (
                   <span className="shrink-0 rounded bg-primary/10 px-1 text-[10px] font-medium text-primary">
-                    default
+                    {t("agents", "defaultBadge")}
                   </span>
                 )}
               </div>
@@ -163,7 +147,7 @@ export function ModelPicker({
 
       {!modelsQuery.isLoading && filtered.length === 0 && !canCreate && (
         <p className="px-3 py-3 text-center text-xs text-muted-foreground">
-          No models available
+          {t("agents", "noModelsAvailable")}
         </p>
       )}
 
@@ -171,11 +155,11 @@ export function ModelPicker({
         <PickerItem
           selected={false}
           onClick={() => void select(trimmedSearch)}
-          tooltip={`Use “${trimmedSearch}” as a custom model id`}
+          tooltip={t("agents", "useCustomModel").replace("{search}", trimmedSearch)}
         >
           <Plus className="h-3.5 w-3.5 shrink-0 text-primary" />
           <span className="truncate text-primary">
-            Use &ldquo;{trimmedSearch}&rdquo;
+            {t("agents", "useCustomModel").replace("{search}", trimmedSearch)}
           </span>
         </PickerItem>
       )}
@@ -185,9 +169,9 @@ export function ModelPicker({
           type="button"
           onClick={() => void select("")}
           className="mt-1 flex w-full items-center border-t px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-accent/50"
-          title="Clear and fall back to the runtime's provider default"
+          title={t("agents", "clearModelTitle")}
         >
-          Clear (use provider default)
+          {t("agents", "clearModel")}
         </button>
       )}
     </PropertyPicker>

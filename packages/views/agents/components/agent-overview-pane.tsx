@@ -9,6 +9,7 @@ import {
   Terminal,
 } from "lucide-react";
 import type { Agent, AgentRuntime } from "@multica/core/types";
+import { useAppI18n } from "@multica/core/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,14 +35,14 @@ type DetailTab =
 
 const detailTabs: {
   id: DetailTab;
-  label: string;
+  labelKey: "activity" | "instructions" | "skills" | "environment" | "customArgs";
   icon: typeof FileText;
 }[] = [
-  { id: "activity", label: "Activity", icon: Activity },
-  { id: "instructions", label: "Instructions", icon: FileText },
-  { id: "skills", label: "Skills", icon: BookOpenText },
-  { id: "env", label: "Environment", icon: KeyRound },
-  { id: "custom_args", label: "Custom Args", icon: Terminal },
+  { id: "activity", labelKey: "activity", icon: Activity },
+  { id: "instructions", labelKey: "instructions", icon: FileText },
+  { id: "skills", labelKey: "skills", icon: BookOpenText },
+  { id: "env", labelKey: "environment", icon: KeyRound },
+  { id: "custom_args", labelKey: "customArgs", icon: Terminal },
 ];
 
 interface AgentOverviewPaneProps {
@@ -77,6 +78,7 @@ export function AgentOverviewPane({
   runtimes,
   onUpdate,
 }: AgentOverviewPaneProps) {
+  const { t } = useAppI18n();
   const [activeTab, setActiveTab] = useState<DetailTab>("activity");
   const [activeDirty, setActiveDirty] = useState(false);
   // Holds the destination when a tab change is intercepted by the dirty
@@ -122,7 +124,7 @@ export function AgentOverviewPane({
             }`}
           >
             <tab.icon className="h-3.5 w-3.5" />
-            {tab.label}
+            {t("agents", tab.labelKey)}
           </button>
         ))}
       </div>
@@ -174,19 +176,18 @@ export function AgentOverviewPane({
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+              <AlertDialogTitle>{t("agents", "discardChangesTitle")}</AlertDialogTitle>
               <AlertDialogDescription>
-                You have unsaved changes in this tab. Leaving now will discard
-                them.
+                {t("agents", "discardChangesDesc")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Keep editing</AlertDialogCancel>
+              <AlertDialogCancel>{t("agents", "keepEditing")}</AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
                 onClick={commitTabChange}
               >
-                Discard changes
+                {t("agents", "discardChanges")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

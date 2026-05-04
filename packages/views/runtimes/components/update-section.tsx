@@ -9,6 +9,7 @@ import {
 import { Button } from "@multica/ui/components/ui/button";
 import { api } from "@multica/core/api";
 import type { RuntimeUpdateStatus } from "@multica/core/types";
+import { useAppI18n } from "@multica/core/i18n";
 
 const GITHUB_RELEASES_URL =
   "https://api.github.com/repos/multica-ai/multica/releases/latest";
@@ -51,28 +52,28 @@ function isNewer(latest: string, current: string): boolean {
   return false;
 }
 
-const statusConfig: Record<
-  RuntimeUpdateStatus,
-  { label: string; icon: typeof Loader2; color: string }
-> = {
-  pending: {
-    label: "Waiting for daemon...",
-    icon: Loader2,
-    color: "text-muted-foreground",
-  },
-  running: {
-    label: "Updating...",
-    icon: Loader2,
-    color: "text-info",
-  },
-  completed: {
-    label: "Update complete. Daemon is restarting...",
-    icon: CheckCircle2,
-    color: "text-success",
-  },
-  failed: { label: "Update failed", icon: XCircle, color: "text-destructive" },
-  timeout: { label: "Timeout", icon: XCircle, color: "text-warning" },
-};
+function useStatusConfig() {
+  const { t } = useAppI18n();
+  return {
+    pending: {
+      label: t("runtimes", "waitingForDaemon"),
+      icon: Loader2,
+      color: "text-muted-foreground",
+    },
+    running: {
+      label: t("runtimes", "updating"),
+      icon: Loader2,
+      color: "text-info",
+    },
+    completed: {
+      label: t("runtimes", "updateComplete"),
+      icon: CheckCircle2,
+      color: "text-success",
+    },
+    failed: { label: t("runtimes", "updateFailed"), icon: XCircle, color: "text-destructive" },
+    timeout: { label: t("runtimes", "timeout"), icon: XCircle, color: "text-warning" },
+  };
+}
 
 interface UpdateSectionProps {
   runtimeId: string;
@@ -93,6 +94,7 @@ export function UpdateSection({
   isOnline,
   launchedBy,
 }: UpdateSectionProps) {
+  const { t } = useAppI18n();
   const isManaged = launchedBy === "desktop";
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const [status, setStatus] = useState<RuntimeUpdateStatus | null>(null);
@@ -101,6 +103,7 @@ export function UpdateSection({
   const [updating, setUpdating] = useState(false);
   const [targetVersion, setTargetVersion] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const statusConfig = useStatusConfig();
 
   const cleanup = useCallback(() => {
     if (pollRef.current) {
@@ -173,7 +176,7 @@ export function UpdateSection({
       }, 2000);
     } catch {
       setStatus("failed");
-      setError("Failed to initiate update");
+      setError(t("runtimes", "failedInitUpdate"));
       setUpdating(false);
       setTargetVersion(null);
     }
@@ -191,24 +194,24 @@ export function UpdateSection({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-muted-foreground">CLI Version:</span>
+        <span className="text-xs text-muted-foreground">{t("runtimes", "cliVersion")}:</span>
         <span className="text-xs font-mono">
-          {currentVersion ?? "unknown"}
+          {currentVersion ?? t("runtimes", "unknown")}
         </span>
 
         {isManaged ? (
           <span
             className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-            title="The CLI binary is managed by Multica Desktop — update Desktop to upgrade the CLI."
+            title={t("runtimes", "managedByDesktopTitle")}
           >
-            Managed by Desktop
+            {t("runtimes", "managedByDesktop")}
           </span>
         ) : (
           <>
             {!hasUpdate && currentVersion && latestVersion && !status && (
               <span className="inline-flex items-center gap-1 text-xs text-success">
                 <Check className="h-3 w-3" />
-                Latest
+                {t("runtimes", "latest")}
               </span>
             )}
 
@@ -218,7 +221,7 @@ export function UpdateSection({
                 <span className="text-xs font-mono text-info">
                   {latestVersion}
                 </span>
-                <span className="text-xs text-muted-foreground">available</span>
+                <span className="text-xs text-muted-foreground">{t("runtimes", "available")}</span>
               </>
             )}
 
@@ -230,7 +233,7 @@ export function UpdateSection({
                 disabled={updating}
               >
                 <ArrowUpCircle className="h-3 w-3" />
-                Update
+                {t("runtimes", "update")}
               </Button>
             )}
           </>
@@ -262,7 +265,7 @@ export function UpdateSection({
               className="mt-1"
               onClick={handleUpdate}
             >
-              Retry
+              {t("runtimes", "retry")}
             </Button>
           )}
         </div>

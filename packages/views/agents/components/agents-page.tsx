@@ -30,6 +30,7 @@ import {
   workspaceKeys,
 } from "@multica/core/workspace/queries";
 import { runtimeListOptions } from "@multica/core/runtimes";
+import { useAppI18n } from "@multica/core/i18n";
 import { Button } from "@multica/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -63,14 +64,9 @@ type AvailabilityFilter = "all" | AgentAvailability;
 
 type SortKey = "recent" | "name" | "runs" | "created";
 const SORT_KEYS: SortKey[] = ["recent", "name", "runs", "created"];
-const SORT_LABEL: Record<SortKey, string> = {
-  recent: "Recent activity",
-  name: "Name",
-  runs: "Most runs",
-  created: "Recently created",
-};
 
 export function AgentsPage() {
+  const { t } = useAppI18n();
   const wsId = useWorkspaceId();
   const paths = useWorkspacePaths();
   const navigation = useNavigation();
@@ -392,11 +388,11 @@ export function AgentsPage() {
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
           <AlertCircle className="h-8 w-8 text-destructive" />
           <div>
-            <p className="text-sm font-medium">Couldn&rsquo;t load agents</p>
+            <p className="text-sm font-medium">{t("agents", "couldntLoadAgents")}</p>
             <p className="mt-1 text-xs text-muted-foreground">
               {listError instanceof Error
                 ? listError.message
-                : "Something went wrong fetching the agent list."}
+                : t("agents", "somethingWentWrong")}
             </p>
           </div>
           <Button
@@ -405,7 +401,7 @@ export function AgentsPage() {
             size="sm"
             onClick={() => refetchList()}
           >
-            Try again
+            {t("agents", "tryAgain")}
           </Button>
         </div>
       </div>
@@ -502,11 +498,12 @@ function PageHeaderBar({
   totalCount: number;
   onCreate: () => void;
 }) {
+  const { t } = useAppI18n();
   return (
     <PageHeader className="justify-between px-5">
       <div className="flex items-center gap-2">
         <Bot className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-sm font-medium">Agents</h1>
+        <h1 className="text-sm font-medium">{t("agents", "agents")}</h1>
         {totalCount > 0 && (
           <span className="font-mono text-xs tabular-nums text-muted-foreground/70">
             {totalCount}
@@ -518,20 +515,20 @@ function PageHeaderBar({
             the state-legend job, so the tagline only needs to anchor what
             an agent IS, not what each colour means. */}
         <p className="ml-2 hidden text-xs text-muted-foreground md:block">
-          AI teammates that pick up issues, comment, and update status.{" "}
+          {t("agents", "aiTeammates")}{" "}
           <a
             href="https://multica.ai/docs/agents"
             target="_blank"
             rel="noopener noreferrer"
             className="underline decoration-muted-foreground/30 underline-offset-4 transition-colors hover:text-foreground"
           >
-            Learn more →
+            {t("agents", "learnMore")}
           </a>
         </p>
       </div>
       <Button type="button" size="sm" onClick={onCreate}>
         <Plus className="h-3 w-3" />
-        New agent
+        {t("agents", "createAgent")}
       </Button>
     </PageHeader>
   );
@@ -566,6 +563,7 @@ function ActiveToolbarRow({
   archivedCount: number;
   onShowArchived: () => void;
 }) {
+  const { t } = useAppI18n();
   // Layout: [Search] [Mine|All] ......... [Show archived] [N of M] [Sort ▼]
   // Filter chips were removed (status / workload chips on a small team
   // gain less than they cost), so the toolbar collapses to a single row.
@@ -578,7 +576,7 @@ function ActiveToolbarRow({
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search agents…"
+          placeholder={t("agents", "searchAgents")}
           className="h-8 w-64 pl-8 text-sm"
         />
       </div>
@@ -590,11 +588,11 @@ function ActiveToolbarRow({
             onClick={onShowArchived}
             className="text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
-            Show archived ({archivedCount}) →
+            {t("agents", "showArchived").replace("{count}", String(archivedCount))} →
           </button>
         )}
         <span className="font-mono text-xs tabular-nums text-muted-foreground/70">
-          {visibleCount} of {totalCount}
+          {t("agents", "visibleOfTotal").replace("{visible}", String(visibleCount)).replace("{total}", String(totalCount))}
         </span>
         <SortDropdown sort={sort} setSort={setSort} />
       </div>
@@ -611,19 +609,20 @@ function ScopeSegment({
   setScope: (v: Scope) => void;
   counts: { all: number; mine: number };
 }) {
+  const { t } = useAppI18n();
   // Mine first — that's the more frequent scope (your own agents) and
   // also the default selection, so it lives in the leading slot.
   return (
     <div className="flex items-center gap-0.5 rounded-md bg-muted p-0.5">
       <ScopeButton
         active={scope === "mine"}
-        label="Mine"
+        label={t("agents", "mine")}
         count={counts.mine}
         onClick={() => setScope("mine")}
       />
       <ScopeButton
         active={scope === "all"}
-        label="All"
+        label={t("agents", "all")}
         count={counts.all}
         onClick={() => setScope("all")}
       />
@@ -671,6 +670,16 @@ function SortDropdown({
   sort: SortKey;
   setSort: (v: SortKey) => void;
 }) {
+  const { t } = useAppI18n();
+  const SORT_LABEL: Record<SortKey, string> = useMemo(
+    () => ({
+      recent: t("agents", "recentActivity"),
+      name: t("agents", "name"),
+      runs: t("agents", "mostRuns"),
+      created: t("agents", "recentlyCreated"),
+    }),
+    [t],
+  );
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -716,12 +725,13 @@ function AvailabilityFilterRow({
   counts: Record<AgentAvailability, number>;
   totalCount: number;
 }) {
+  const { t } = useAppI18n();
   return (
     <div className="flex h-11 shrink-0 items-center gap-2 border-b px-4">
       <AvailabilityChip
         active={value === "all"}
         onClick={() => onChange("all")}
-        label="All"
+        label={t("agents", "all")}
         count={totalCount}
       />
       {availabilityOrder.map((a) => {
@@ -790,6 +800,7 @@ function ArchivedToolbarRow({
   sort: SortKey;
   setSort: (v: SortKey) => void;
 }) {
+  const { t } = useAppI18n();
   return (
     <div className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
       <button
@@ -798,10 +809,10 @@ function ArchivedToolbarRow({
         className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-3 w-3" />
-        Active agents
+        {t("agents", "activeAgents")}
       </button>
       <span className="text-muted-foreground/40">/</span>
-      <span className="text-xs font-medium">Archived agents</span>
+      <span className="text-xs font-medium">{t("agents", "archivedAgents")}</span>
       <span className="font-mono text-xs tabular-nums text-muted-foreground/70">
         {archivedCount}
       </span>
@@ -817,19 +828,19 @@ function ArchivedToolbarRow({
 // ---------------------------------------------------------------------------
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
+  const { t } = useAppI18n();
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
         <Bot className="h-6 w-6 text-muted-foreground" />
       </div>
-      <h2 className="mt-4 text-base font-semibold">No agents yet</h2>
+      <h2 className="mt-4 text-base font-semibold">{t("agents", "noAgentsYet")}</h2>
       <p className="mt-1 max-w-md text-sm text-muted-foreground">
-        Create an agent and assign it issues, like any teammate. Local agents
-        run on your machine; cloud agents run on Multica&rsquo;s runtime.
+        {t("agents", "noAgentsYetDesc")}
       </p>
       <Button type="button" onClick={onCreate} size="sm" className="mt-5">
         <Plus className="h-3 w-3" />
-        New agent
+        {t("agents", "createAgent")}
       </Button>
     </div>
   );
@@ -844,6 +855,7 @@ function NoMatches({
   search: string;
   scope: Scope;
 }) {
+  const { t } = useAppI18n();
   const hasSearch = search.length > 0;
   // "mine" is the only remaining narrowing dimension after chip filters
   // were dropped — keep the wording aware of it so an empty Mine view
@@ -853,18 +865,18 @@ function NoMatches({
   let body: string;
   if (view === "archived") {
     body = hasSearch
-      ? `No archived agents match "${search}".`
-      : "No archived agents yet.";
+      ? t("agents", "noArchivedAgentsSearch").replace("{search}", search)
+      : t("agents", "noArchivedAgents");
   } else if (hasSearch) {
-    body = `No agents match "${search}"${hasFilter ? " in this filter" : ""}.`;
+    body = t("agents", "noAgentsMatchSearch").replace("{search}", search) + (hasFilter ? ` ${t("agents", "noAgentsMatchFilter").toLowerCase()}` : "") + ".";
   } else {
-    body = "No agents match this filter.";
+    body = t("agents", "noAgentsMatchFilter");
   }
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-16 text-center text-muted-foreground">
       <Search className="h-8 w-8 text-muted-foreground/40" />
-      <p className="text-sm">No matches</p>
+      <p className="text-sm">{t("agents", "noMatches")}</p>
       <p className="max-w-xs text-xs">{body}</p>
     </div>
   );

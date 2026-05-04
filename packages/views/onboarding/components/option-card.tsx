@@ -1,18 +1,11 @@
 "use client";
 
 import { Input } from "@multica/ui/components/ui/input";
+import { useAppI18n } from "@multica/core/i18n";
 import { cn } from "@multica/ui/lib/utils";
 
 const OTHER_INPUT_MAX_LENGTH = 80;
 
-/**
- * Editorial radio-style option row used in the Step 1 questionnaire.
- *
- * Design reference: onboarding(3) `.opt` — thin border resting, and on
- * select: filled inset ring + radio marker turns into a filled dot.
- * Enter/Space select; full row is the hit target. ARIA radio inside a
- * containing `<fieldset role="radiogroup">` in StepQuestionnaire.
- */
 export function OptionCard({
   selected,
   onSelect,
@@ -43,14 +36,6 @@ export function OptionCard({
   );
 }
 
-/**
- * "Other" variant — reveals an 80-char text input below the row once
- * selected. Auto-focus on first open saves the user a click.
- *
- * Clearing `otherValue` when the user picks a sibling option is the
- * parent questionnaire's job; this component stays focus-stable while
- * the user is mid-typing.
- */
 export function OtherOptionCard({
   selected,
   onSelect,
@@ -64,6 +49,8 @@ export function OtherOptionCard({
   onOtherChange: (value: string) => void;
   placeholder: string;
 }) {
+  const { t } = useAppI18n();
+
   return (
     <div
       className={cn(
@@ -82,7 +69,7 @@ export function OtherOptionCard({
       >
         <RadioMark selected={selected} />
         <span className="text-[14.5px] font-normal leading-tight text-foreground">
-          Other
+          {t("onboarding", "other")}
         </span>
       </button>
       {selected && (

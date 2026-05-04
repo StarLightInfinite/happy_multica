@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Cpu, Loader2, Plus, Check, Info } from "lucide-react";
 import { runtimeModelsOptions } from "@multica/core/runtimes";
+import { useAppI18n } from "@multica/core/i18n";
 import type { RuntimeModel } from "@multica/core/types";
 import {
   Popover,
@@ -33,6 +34,7 @@ export function ModelDropdown({
   onChange: (value: string) => void;
   disabled?: boolean;
 }) {
+  const { t } = useAppI18n();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -83,10 +85,10 @@ export function ModelDropdown({
   const triggerLabel =
     value ||
     (disabled
-      ? "Select a runtime first"
+      ? t("agents", "selectRuntimeFirst")
       : runtimeOnline
-        ? "Default (provider)"
-        : "Runtime offline — enter manually");
+        ? t("agents", "defaultProvider")
+        : t("agents", "runtimeOffline"));
 
   if (!supported && !modelsQuery.isLoading) {
     // Provider doesn't honour per-agent model selection — show a
@@ -94,14 +96,13 @@ export function ModelDropdown({
     // inert. (Hermes reads its model from ~/.hermes/.env.)
     return (
       <div className="min-w-0">
-        <Label className="text-xs text-muted-foreground">Model</Label>
+        <Label className="text-xs text-muted-foreground">{t("agents", "model")}</Label>
         <div className="mt-1.5 flex items-start gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="min-w-0">
-            <div>Model selection is managed by this runtime.</div>
+            <div>{t("agents", "modelManagedByRuntime")}</div>
             <div className="mt-0.5 text-xs">
-              Configure the model on the runtime host (e.g. Hermes reads it
-              from its own config file).
+              {t("agents", "modelManagedHint")}
             </div>
           </div>
         </div>
@@ -112,9 +113,9 @@ export function ModelDropdown({
   return (
     <div className="min-w-0">
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-muted-foreground">Model</Label>
+        <Label className="text-xs text-muted-foreground">{t("agents", "model")}</Label>
         {modelsQuery.isError && (
-          <span className="text-xs text-muted-foreground">discovery failed</span>
+          <span className="text-xs text-muted-foreground">{t("agents", "discoveryFailed")}</span>
         )}
       </div>
       <Popover open={open} onOpenChange={setOpen}>
@@ -144,7 +145,7 @@ export function ModelDropdown({
           <div className="border-b border-border p-2">
             <Input
               autoFocus
-              placeholder="Search or type a model ID"
+              placeholder={t("agents", "searchModel")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8"
@@ -154,7 +155,7 @@ export function ModelDropdown({
             {modelsQuery.isLoading && (
               <div className="flex items-center gap-2 px-3 py-6 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Discovering models…
+                {t("agents", "discoveringModels")}
               </div>
             )}
 
@@ -179,7 +180,7 @@ export function ModelDropdown({
                           <span className="truncate font-medium">{m.label}</span>
                           {m.default && (
                             <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
-                              default
+                              {t("agents", "defaultBadge")}
                             </span>
                           )}
                         </div>
@@ -201,7 +202,7 @@ export function ModelDropdown({
               Object.keys(filtered).length === 0 &&
               !canCreate && (
                 <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                  No models available.
+                  {t("agents", "noModelsAvailableDesc")}
                 </div>
               )}
 
@@ -212,7 +213,7 @@ export function ModelDropdown({
               >
                 <Plus className="h-4 w-4 shrink-0" />
                 <span className="truncate">
-                  Use “{trimmedSearch}”
+                  {t("agents", "useCustomModel").replace("{search}", trimmedSearch)}
                 </span>
               </button>
             )}
@@ -222,7 +223,7 @@ export function ModelDropdown({
                 onClick={() => select("")}
                 className="mt-1 flex w-full items-center gap-2 border-t border-border px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-accent/50"
               >
-                Clear selection (use provider default)
+                {t("agents", "clearSelection")}
               </button>
             )}
           </div>

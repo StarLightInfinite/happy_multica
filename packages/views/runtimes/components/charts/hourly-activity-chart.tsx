@@ -12,14 +12,18 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@multica/ui/components/ui/chart";
+import { useAppI18n } from "@multica/core/i18n";
 
 // Hour-of-day cost. The "WHEN" tab in the runtime detail uses this to show
 // "during what hours of the day did this runtime spend money", which is
 // fundamentally different from "how much per calendar day". Data is fed in
 // by the parent (single orchestrator pattern) — this component is dumb.
-const hourlyChartConfig = {
-  cost: { label: "Cost", color: "var(--color-chart-1)" },
-} satisfies ChartConfig;
+function useHourlyChartConfig(): ChartConfig {
+  const { t } = useAppI18n();
+  return {
+    cost: { label: t("runtimes", "costLabel"), color: "var(--color-chart-1)" },
+  };
+}
 
 export interface HourlyCostPoint {
   hour: number;
@@ -27,6 +31,8 @@ export interface HourlyCostPoint {
 }
 
 export function HourlyActivityChart({ data }: { data: HourlyCostPoint[] }) {
+  const config = useHourlyChartConfig();
+
   // Always render 24 buckets so the X axis is continuous. The parent passes
   // pre-aggregated server data which may omit hours with zero activity;
   // we fill those in with $0 here so visual gaps are intentional ("nothing
@@ -41,7 +47,7 @@ export function HourlyActivityChart({ data }: { data: HourlyCostPoint[] }) {
   }, [data]);
 
   return (
-    <ChartContainer config={hourlyChartConfig} className="aspect-[3/1] w-full">
+    <ChartContainer config={config} className="aspect-[3/1] w-full">
       <BarChart data={chartData} margin={{ left: 0, right: 0, top: 4, bottom: 0 }}>
         <CartesianGrid vertical={false} />
         <XAxis

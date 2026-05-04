@@ -16,6 +16,7 @@ import { useWorkspaceId } from "@multica/core/hooks";
 import { runtimeKeys } from "@multica/core/runtimes/queries";
 import { useWSEvent } from "@multica/core/realtime";
 import { paths, useWorkspaceSlug } from "@multica/core/paths";
+import { useAppI18n } from "@multica/core/i18n";
 import {
   Dialog,
   DialogContent,
@@ -64,8 +65,8 @@ export function ConnectRemoteDialog({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     if (!copied) return;
-    const t = setTimeout(() => setCopied(null), 2000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setCopied(null), 2000);
+    return () => clearTimeout(timer);
   }, [copied]);
 
   const handleGoToAgents = () => {
@@ -168,13 +169,14 @@ function InstructionsStep({
   onNext: () => void;
   onClose: () => void;
 }) {
+  const { t } = useAppI18n();
+
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Connect a remote machine</DialogTitle>
+        <DialogTitle>{t("runtimes", "connectRemoteTitle")}</DialogTitle>
         <DialogDescription>
-          Run these commands on your remote machine (e.g. AWS EC2) to install the
-          Multica CLI and register it as a runtime.
+          {t("runtimes", "connectRemoteDesc")}
         </DialogDescription>
       </DialogHeader>
 
@@ -184,7 +186,7 @@ function InstructionsStep({
           <div>
             <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Terminal className="h-3.5 w-3.5" />
-              1. Install the CLI
+              1. {t("runtimes", "installCli")}
             </div>
             <CodeBlock
               code={INSTALL_CMD}
@@ -198,7 +200,7 @@ function InstructionsStep({
           <div>
             <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Server className="h-3.5 w-3.5" />
-              2. Configure
+              2. {t("runtimes", "configure")}
             </div>
             <CodeBlock
               code={CONFIGURE_CMD}
@@ -211,7 +213,7 @@ function InstructionsStep({
           {/* Step 3: Login */}
           <div>
             <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              3. Login with a personal access token
+              3. {t("runtimes", "loginWithToken")}
             </div>
             <CodeBlock
               code={LOGIN_CMD}
@@ -220,18 +222,14 @@ function InstructionsStep({
               onCopy={onCopy}
             />
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Create one in{" "}
-              <span className="font-medium text-foreground">
-                Settings → Tokens
-              </span>
-              .
+              {t("runtimes", "settingsTokensHint")}
             </p>
           </div>
 
           {/* Step 4: Start daemon */}
           <div>
             <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              4. Start the daemon
+              4. {t("runtimes", "startDaemon")}
             </div>
             <CodeBlock
               code={START_CMD}
@@ -246,14 +244,8 @@ function InstructionsStep({
             <div className="flex items-start gap-2">
               <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
               <div className="text-[11px] leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">Security: </span>
-                Use an EC2 IAM role or least-privilege credentials. Never put
-                root keys into agent{" "}
-                <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">
-                  custom_env
-                </code>
-                . The daemon uses outbound connections only — no inbound ports
-                needed.
+                <span className="font-medium text-foreground">{t("runtimes", "securityTip")}: </span>
+                {t("runtimes", "securityTipBody")}
               </div>
             </div>
           </div>
@@ -262,7 +254,7 @@ function InstructionsStep({
           <details className="group pb-1">
             <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
               <Wrench className="h-3.5 w-3.5" />
-              Troubleshooting
+              {t("runtimes", "troubleshooting")}
               <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
             </summary>
             <ul className="mt-1.5 list-disc space-y-0.5 pl-8 text-[11px] text-muted-foreground">
@@ -299,10 +291,10 @@ function InstructionsStep({
 
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>
-          Cancel
+          {t("runtimes", "cancel")}
         </Button>
         <Button onClick={onNext}>
-          I&apos;ve started the daemon
+          {t("runtimes", "startedDaemon")}
           <ChevronRight className="h-3.5 w-3.5" />
         </Button>
       </DialogFooter>
@@ -315,13 +307,14 @@ function InstructionsStep({
 // ---------------------------------------------------------------------------
 
 function WaitingStep({ onBack }: { onBack: () => void }) {
+  const { t } = useAppI18n();
+
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Waiting for runtime…</DialogTitle>
+        <DialogTitle>{t("runtimes", "waitingTitle")}</DialogTitle>
         <DialogDescription>
-          Listening for your remote daemon to register. This page updates
-          automatically — no need to refresh.
+          {t("runtimes", "waitingDesc")}
         </DialogDescription>
       </DialogHeader>
 
@@ -338,7 +331,7 @@ function WaitingStep({ onBack }: { onBack: () => void }) {
 
       <DialogFooter>
         <Button variant="ghost" onClick={onBack}>
-          Back
+          {t("runtimes", "back")}
         </Button>
       </DialogFooter>
     </>
@@ -356,13 +349,14 @@ function SuccessStep({
   onGoToAgents: () => void;
   onGoToRuntime?: () => void;
 }) {
+  const { t } = useAppI18n();
+
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Runtime connected!</DialogTitle>
+        <DialogTitle>{t("runtimes", "connectedTitle")}</DialogTitle>
         <DialogDescription>
-          Your remote machine has registered as a runtime. You can now create an
-          agent that dispatches tasks to it.
+          {t("runtimes", "connectedDesc")}
         </DialogDescription>
       </DialogHeader>
 
@@ -375,11 +369,11 @@ function SuccessStep({
       <DialogFooter>
         {onGoToRuntime && (
           <Button variant="ghost" onClick={onGoToRuntime}>
-            View runtime
+            {t("runtimes", "viewRuntime")}
           </Button>
         )}
         <Button onClick={onGoToAgents}>
-          Create an agent
+          {t("runtimes", "createAgent")}
           <ChevronRight className="h-3.5 w-3.5" />
         </Button>
       </DialogFooter>

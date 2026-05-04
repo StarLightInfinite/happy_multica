@@ -38,16 +38,20 @@ import {
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@multica/core/auth";
+import { useAppI18n } from "@multica/core/i18n";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useCurrentWorkspace } from "@multica/core/paths";
 import { memberListOptions, invitationListOptions, workspaceKeys } from "@multica/core/workspace/queries";
 import { api } from "@multica/core/api";
 
-const roleConfig: Record<MemberRole, { label: string; icon: typeof Crown; description: string }> = {
-  owner: { label: "Owner", icon: Crown, description: "Full access, manage all settings" },
-  admin: { label: "Admin", icon: Shield, description: "Manage members and settings" },
-  member: { label: "Member", icon: User, description: "Create and work on issues" },
-};
+function useRoleConfig() {
+  const { t } = useAppI18n();
+  return {
+    owner: { label: t("settings", "owner"), icon: Crown, description: t("settings", "ownerDesc") },
+    admin: { label: t("settings", "admin"), icon: Shield, description: t("settings", "adminDesc") },
+    member: { label: t("settings", "member"), icon: User, description: t("settings", "memberDesc") },
+  } as Record<MemberRole, { label: string; icon: typeof Crown; description: string }>;
+}
 
 function MemberRow({
   member,
@@ -70,6 +74,8 @@ function MemberRow({
   onRoleChange: (role: MemberRole) => void;
   onRemove: () => void;
 }) {
+  const { t } = useAppI18n();
+  const roleConfig = useRoleConfig();
   const rc = roleConfig[member.role];
   const RoleIcon = rc.icon;
   const canEditRole = canManage && !isSelf && (member.role !== "owner" || canManageOwners);
@@ -98,7 +104,7 @@ function MemberRow({
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <Shield className="h-3.5 w-3.5" />
-                  Change role
+                  {t("settings", "changeRole")}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="w-auto">
                   {(Object.entries(roleConfig) as [MemberRole, (typeof roleConfig)[MemberRole]][]).map(
@@ -119,16 +125,15 @@ function MemberRow({
                           disabled={wouldDemoteLastOwner}
                           title={
                             wouldDemoteLastOwner
-                              ? "Promote another member to owner first — a workspace must keep at least one owner."
-                              : undefined
-                          }
+                              ? t("settings", "cannotDemoteLastOwner")
+                              : config.description}
                         >
                           <Icon className="h-3.5 w-3.5" />
                           <div className="flex flex-col">
                             <span>{config.label}</span>
                             <span className="text-xs text-muted-foreground font-normal">
                               {wouldDemoteLastOwner
-                                ? "Cannot demote the last owner"
+                                ? t("settings", "cannotDemoteLastOwner")
                                 : config.description}
                             </span>
                           </div>
@@ -146,7 +151,7 @@ function MemberRow({
             {canRemove && (
               <DropdownMenuItem variant="destructive" onClick={onRemove}>
                 <UserMinus className="h-3.5 w-3.5" />
-                Remove from workspace
+                {t("settings", "removeFromWorkspace")}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -171,6 +176,8 @@ function InvitationRow({
   onRevoke: () => void;
   busy: boolean;
 }) {
+  const { t } = useAppI18n();
+  const roleConfig = useRoleConfig();
   const rc = roleConfig[invitation.role];
 
   return (
@@ -182,7 +189,7 @@ function InvitationRow({
         <div className="text-sm font-medium truncate">{invitation.invitee_email}</div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
-          <span>Pending</span>
+          <span>{t("settings", "pending")}</span>
         </div>
       </div>
       {canManage && (
@@ -191,7 +198,7 @@ function InvitationRow({
           size="icon-sm"
           disabled={busy}
           onClick={onRevoke}
-          title="Revoke invitation"
+          title={t("settings", "revokeInvitation")}
         >
           <X className="h-4 w-4 text-muted-foreground" />
         </Button>
@@ -204,8 +211,10 @@ function InvitationRow({
 }
 
 export function MembersTab() {
+  const { t } = useAppI18n();
   const user = useAuthStore((s) => s.user);
   const workspace = useCurrentWorkspace();
+  const roleConfig = useRoleConfig();
   const qc = useQueryClient();
   const wsId = useWorkspaceId();
   const { data: members = [] } = useQuery(memberListOptions(wsId));
@@ -239,9 +248,9 @@ export function MembersTab() {
       setInviteEmail("");
       setInviteRole("member");
       qc.invalidateQueries({ queryKey: workspaceKeys.invitations(wsId) });
-      toast.success("Invitation sent");
+      toast.success(t("settings", "invitationSent"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to send invitation");
+      toast.error(e instanceof Error ? e.message : t("settings", "failedToSendInvitation"));
     } finally {
       setInviteLoading(false);
     }
@@ -250,17 +259,17 @@ export function MembersTab() {
   const handleRevokeInvitation = (invitation: Invitation) => {
     if (!workspace) return;
     setConfirmAction({
-      title: "Revoke invitation",
-      description: `Revoke the invitation to ${invitation.invitee_email}? They will no longer be able to join this workspace.`,
+      title: t("settings", "revokeInvitation"),
+      description: t("settings", "revokeInvitationDesc").replace("{email}", invitation.invitee_email),
       variant: "destructive",
       onConfirm: async () => {
         setInvitationActionId(invitation.id);
         try {
           await api.revokeInvitation(workspace.id, invitation.id);
           qc.invalidateQueries({ queryKey: workspaceKeys.invitations(wsId) });
-          toast.success("Invitation revoked");
+          toast.success(t("settings", "invitationRevoked"));
         } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Failed to revoke invitation");
+          toast.error(e instanceof Error ? e.message : t("settings", "failedToRevokeInvitation"));
         } finally {
           setInvitationActionId(null);
         }
@@ -274,9 +283,9 @@ export function MembersTab() {
     try {
       await api.updateMember(workspace.id, memberId, { role });
       qc.invalidateQueries({ queryKey: workspaceKeys.members(wsId) });
-      toast.success("Role updated");
+      toast.success(t("settings", "roleUpdated"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update member");
+      toast.error(e instanceof Error ? e.message : t("settings", "failedToUpdateMember"));
     } finally {
       setMemberActionId(null);
     }
@@ -285,17 +294,17 @@ export function MembersTab() {
   const handleRemoveMember = (member: MemberWithUser) => {
     if (!workspace) return;
     setConfirmAction({
-      title: `Remove ${member.name}`,
-      description: `Remove ${member.name} from ${workspace.name}? They will lose access to this workspace.`,
+      title: t("settings", "removeMember").replace("{name}", member.name),
+      description: t("settings", "removeMemberDesc").replace("{name}", member.name).replace("{workspace}", workspace.name),
       variant: "destructive",
       onConfirm: async () => {
         setMemberActionId(member.id);
         try {
           await api.deleteMember(workspace.id, member.id);
           qc.invalidateQueries({ queryKey: workspaceKeys.members(wsId) });
-          toast.success("Member removed");
+          toast.success(t("settings", "memberRemoved"));
         } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Failed to remove member");
+          toast.error(e instanceof Error ? e.message : t("settings", "failedToRemoveMember"));
         } finally {
           setMemberActionId(null);
         }
@@ -310,7 +319,7 @@ export function MembersTab() {
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold">Members ({members.length})</h2>
+          <h2 className="text-sm font-semibold">{t("settings", "membersCount").replace("{count}", String(members.length))}</h2>
         </div>
 
         {canManageWorkspace && (
@@ -318,7 +327,7 @@ export function MembersTab() {
             <CardContent className="space-y-3">
               <div className="flex items-center gap-2">
                 <Plus className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-sm font-medium">Invite member</h3>
+                <h3 className="text-sm font-medium">{t("settings", "inviteMember")}</h3>
               </div>
               <div className="grid gap-3 sm:grid-cols-[1fr_120px_auto]">
                 <Input
@@ -343,7 +352,7 @@ export function MembersTab() {
                   onClick={handleInviteMember}
                   disabled={inviteLoading || !inviteEmail.trim()}
                 >
-                  {inviteLoading ? "Inviting..." : "Invite"}
+                  {inviteLoading ? t("settings", "inviting") : t("settings", "invite")}
                 </Button>
               </div>
             </CardContent>
@@ -368,7 +377,7 @@ export function MembersTab() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No members found.</p>
+          <p className="text-sm text-muted-foreground">{t("settings", "noMembers")}</p>
         )}
       </section>
 
@@ -376,7 +385,7 @@ export function MembersTab() {
         <section className="space-y-4">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold">Pending invitations ({invitations.length})</h2>
+            <h2 className="text-sm font-semibold">{t("settings", "pendingInvitationsCount").replace("{count}", String(invitations.length))}</h2>
           </div>
           <div className="overflow-hidden rounded-xl ring-1 ring-foreground/10">
             {invitations.map((inv, i) => (

@@ -15,7 +15,7 @@ import {
   type DragOverEvent,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Eye, MoreHorizontal } from "lucide-react";
+import { Eye, MoreHorizontal, Columns3, List } from "lucide-react";
 import type { Issue, IssueStatus } from "@multica/core/types";
 import { Button } from "@multica/ui/components/ui/button";
 import { useLoadMoreByStatus } from "@multica/core/issues/mutations";
@@ -35,6 +35,8 @@ import { BoardColumn } from "./board-column";
 import { BoardCardContent } from "./board-card";
 import { InfiniteScrollSentinel } from "./infinite-scroll-sentinel";
 import type { ChildProgress } from "./list-row";
+import { useIsMobile } from "@multica/ui/hooks/use-mobile";
+import { ListRow } from "./list-row";
 
 const COLUMN_IDS = new Set<string>(ALL_STATUSES);
 
@@ -121,6 +123,8 @@ export function BoardView({
 }) {
   const sortBy = useViewStore((s) => s.sortBy);
   const sortDirection = useViewStore((s) => s.sortDirection);
+  const isMobile = useIsMobile();
+  const [mobileViewMode, setMobileViewMode] = useState<"board" | "stacked">("stacked");
   const myIssuesOpts = myIssuesScope
     ? { scope: myIssuesScope, filter: myIssuesFilter ?? {} }
     : undefined;
@@ -279,7 +283,33 @@ export function BoardView({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-1 min-h-0 gap-4 overflow-x-auto p-4">
+      {/* Mobile view toggle */}
+      {isMobile && (
+        <div className="flex items-center justify-between px-2 py-2 border-b">
+          <span className="text-xs font-medium text-muted-foreground">
+            {visibleStatuses.length} columns
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant={mobileViewMode === "stacked" ? "secondary" : "ghost"}
+              size="icon-xs"
+              onClick={() => setMobileViewMode("stacked")}
+            >
+              <List className="size-3.5" />
+            </Button>
+            <Button
+              variant={mobileViewMode === "board" ? "secondary" : "ghost"}
+              size="icon-xs"
+              onClick={() => setMobileViewMode("board")}
+            >
+              <Columns3 className="size-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Board view — desktop always, mobile when toggled */}
+      <div className={`flex flex-1 min-h-0 gap-2 sm:gap-4 overflow-x-auto p-2 sm:p-4 ${isMobile && mobileViewMode !== "board" ? "hidden" : ""}`}>
         {visibleStatuses.map((status) => (
           <PaginatedBoardColumn
             key={status}
@@ -298,6 +328,37 @@ export function BoardView({
           />
         )}
       </div>
+
+      {/* Stacked view — mobile only */}
+      {isMobile && mobileViewMode === "stacked" && (
+        <div className="flex-1 overflow-y-auto">
+          {visibleStatuses.map((status) => {
+            const statusIssues = (columns[status] ?? [])
+              .map((id) => issueMapRef.current.get(id))
+              .filter((i): i is Issue => i !== undefined);
+            if (statusIssues.length === 0) return null;
+            const cfg = STATUS_CONFIG[status];
+            return (
+              <div key={status} className="border-b last:border-b-0">
+                <div className="sticky top-0 z-10 bg-background px-4 py-2 flex items-center gap-2">
+                  <StatusIcon status={status} className="h-4 w-4" />
+                  <span className="text-sm font-medium">{cfg.label}</span>
+                  <span className="text-xs text-muted-foreground">({statusIssues.length})</span>
+                </div>
+                <div className="divide-y">
+                  {statusIssues.map((issue) => (
+                    <ListRow
+                      key={issue.id}
+                      issue={issue}
+                      childProgress={childProgressMap.get(issue.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <DragOverlay dropAnimation={null}>
         {activeIssue ? (

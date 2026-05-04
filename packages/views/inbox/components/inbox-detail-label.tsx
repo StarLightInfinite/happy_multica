@@ -2,30 +2,32 @@
 
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "@multica/core/issues/config";
 import { useActorName } from "@multica/core/workspace/hooks";
+import { useAppI18n } from "@multica/core/i18n";
 import { StatusIcon, PriorityIcon } from "../../issues/components";
-import type { InboxItem, InboxItemType, IssueStatus, IssuePriority } from "@multica/core/types";
+import type { InboxItem, IssueStatus, IssuePriority } from "@multica/core/types";
 import { getQuickCreateFailureDetail } from "./inbox-display";
 
-const typeLabels: Record<InboxItemType, string> = {
-  issue_assigned: "Assigned",
-  unassigned: "Unassigned",
-  assignee_changed: "Assignee changed",
-  status_changed: "Status changed",
-  priority_changed: "Priority changed",
-  due_date_changed: "Due date changed",
-  new_comment: "New comment",
-  mentioned: "Mentioned",
-  review_requested: "Review requested",
-  task_completed: "Task completed",
-  task_failed: "Task failed",
-  agent_blocked: "Agent blocked",
-  agent_completed: "Agent completed",
-  reaction_added: "Reacted",
-  quick_create_done: "Created with agent",
-  quick_create_failed: "Create with agent failed",
-};
-
-export { typeLabels };
+export function useTypeLabels() {
+  const { t } = useAppI18n();
+  return {
+    issue_assigned: t("inbox", "assigned"),
+    unassigned: t("inbox", "unassigned"),
+    assignee_changed: t("inbox", "assigneeChanged"),
+    status_changed: t("inbox", "statusChanged"),
+    priority_changed: t("inbox", "priorityChanged"),
+    due_date_changed: t("inbox", "dueDateChanged"),
+    new_comment: t("inbox", "newComment"),
+    mentioned: t("inbox", "mentioned"),
+    review_requested: t("inbox", "reviewRequested"),
+    task_completed: t("inbox", "taskCompleted"),
+    task_failed: t("inbox", "taskFailed"),
+    agent_blocked: t("inbox", "agentBlocked"),
+    agent_completed: t("inbox", "agentCompleted"),
+    reaction_added: t("inbox", "reacted"),
+    quick_create_done: t("inbox", "quickCreateDone"),
+    quick_create_failed: t("inbox", "quickCreateFailed"),
+  };
+}
 
 function shortDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -36,7 +38,9 @@ function shortDate(dateStr: string): string {
 }
 
 export function InboxDetailLabel({ item }: { item: InboxItem }) {
+  const { t } = useAppI18n();
   const { getActorName } = useActorName();
+  const typeLabels = useTypeLabels();
   const details = item.details ?? {};
 
   switch (item.type) {
@@ -45,7 +49,7 @@ export function InboxDetailLabel({ item }: { item: InboxItem }) {
       const label = STATUS_CONFIG[details.to as IssueStatus]?.label ?? details.to;
       return (
         <span className="inline-flex items-center gap-1">
-          Set status to
+          {t("inbox", "setStatusTo")}
           <StatusIcon status={details.to as IssueStatus} className="h-3 w-3" />
           {label}
         </span>
@@ -56,7 +60,7 @@ export function InboxDetailLabel({ item }: { item: InboxItem }) {
       const label = PRIORITY_CONFIG[details.to as IssuePriority]?.label ?? details.to;
       return (
         <span className="inline-flex items-center gap-1">
-          Set priority to
+          {t("inbox", "setPriorityTo")}
           <PriorityIcon priority={details.to as IssuePriority} className="h-3 w-3" />
           {label}
         </span>
@@ -64,21 +68,21 @@ export function InboxDetailLabel({ item }: { item: InboxItem }) {
     }
     case "issue_assigned": {
       if (details.new_assignee_id) {
-        return <span>Assigned to {getActorName(details.new_assignee_type ?? "member", details.new_assignee_id)}</span>;
+        return <span>{t("inbox", "assignedTo").replace("{name}", getActorName(details.new_assignee_type ?? "member", details.new_assignee_id))}</span>;
       }
       return <span>{typeLabels[item.type]}</span>;
     }
     case "unassigned":
-      return <span>Removed assignee</span>;
+      return <span>{t("inbox", "removedAssignee")}</span>;
     case "assignee_changed": {
       if (details.new_assignee_id) {
-        return <span>Assigned to {getActorName(details.new_assignee_type ?? "member", details.new_assignee_id)}</span>;
+        return <span>{t("inbox", "assignedTo").replace("{name}", getActorName(details.new_assignee_type ?? "member", details.new_assignee_id))}</span>;
       }
       return <span>{typeLabels[item.type]}</span>;
     }
     case "due_date_changed": {
-      if (details.to) return <span>Set due date to {shortDate(details.to)}</span>;
-      return <span>Removed due date</span>;
+      if (details.to) return <span>{t("inbox", "setDueDateTo").replace("{date}", shortDate(details.to))}</span>;
+      return <span>{t("inbox", "removedDueDate")}</span>;
     }
     case "new_comment": {
       if (item.body) return <span>{item.body}</span>;
@@ -86,17 +90,17 @@ export function InboxDetailLabel({ item }: { item: InboxItem }) {
     }
     case "reaction_added": {
       const emoji = details.emoji;
-      if (emoji) return <span>Reacted {emoji} to your comment</span>;
+      if (emoji) return <span>{t("inbox", "reactedToComment").replace("{emoji}", emoji)}</span>;
       return <span>{typeLabels[item.type]}</span>;
     }
     case "quick_create_done": {
       const identifier = details.identifier;
-      if (identifier) return <span>Created with agent: {identifier}</span>;
+      if (identifier) return <span>{t("inbox", "createdWithAgent").replace("{identifier}", identifier)}</span>;
       return <span>{typeLabels[item.type]}</span>;
     }
     case "quick_create_failed": {
       const detail = getQuickCreateFailureDetail(item);
-      if (detail) return <span>Failed: {detail}</span>;
+      if (detail) return <span>{t("inbox", "failed").replace("{detail}", detail)}</span>;
       return <span>{typeLabels[item.type]}</span>;
     }
     default:

@@ -16,6 +16,7 @@ import {
   runtimeUsageOptions,
 } from "@multica/core/runtimes";
 import { useDeleteRuntime } from "@multica/core/runtimes/mutations";
+import { useAppI18n } from "@multica/core/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,34 +79,36 @@ const COL_WIDTHS = {
   actions: 60,
 } as const;
 
-interface CreateColumnsArgs {
+interface UseRuntimeColumnsArgs {
   showOwner: boolean;
   latestCliVersion: string | null;
   wsId: string;
   now: number;
 }
 
-export function createRuntimeColumns({
+export function useRuntimeColumns({
   showOwner,
   latestCliVersion,
   wsId,
   now,
-}: CreateColumnsArgs): ColumnDef<RuntimeRow>[] {
+}: UseRuntimeColumnsArgs): ColumnDef<RuntimeRow>[] {
+  const { t } = useAppI18n();
+
   const cols: ColumnDef<RuntimeRow>[] = [
     {
       id: "runtime",
-      header: "Runtime",
+      header: t("runtimes", "runtime"),
       size: COL_WIDTHS.runtime,
       meta: { grow: true },
       cell: ({ row }) => <RuntimeNameCell runtime={row.original.runtime} />,
     },
     {
       id: "health",
-      header: "Health",
+      header: t("runtimes", "health"),
       size: COL_WIDTHS.health,
       meta: { grow: true },
       cell: ({ row }) => (
-        <HealthCell runtime={row.original.runtime} now={now} />
+        <HealthCell runtime={row.original.runtime} now={now} t={t} />
       ),
     },
   ];
@@ -113,7 +116,7 @@ export function createRuntimeColumns({
   if (showOwner) {
     cols.push({
       id: "owner",
-      header: "Owner",
+      header: t("runtimes", "owner"),
       size: COL_WIDTHS.owner,
       cell: ({ row }) =>
         row.original.ownerMember ? (
@@ -136,7 +139,7 @@ export function createRuntimeColumns({
   cols.push(
     {
       id: "agents",
-      header: "Agents",
+      header: t("runtimes", "agents"),
       size: COL_WIDTHS.agents,
       cell: ({ row }) => (
         <AgentStack agentIds={row.original.workload.agentIds} />
@@ -144,7 +147,7 @@ export function createRuntimeColumns({
     },
     {
       id: "workload",
-      header: "Workload",
+      header: t("runtimes", "workload"),
       size: COL_WIDTHS.workload,
       cell: ({ row }) => {
         const health = deriveRuntimeHealth(row.original.runtime, now);
@@ -160,19 +163,20 @@ export function createRuntimeColumns({
     },
     {
       id: "cost",
-      header: () => <div className="text-right">Cost · 7d</div>,
+      header: () => <div className="text-right">{t("runtimes", "cost7d")}</div>,
       size: COL_WIDTHS.cost,
       cell: ({ row }) => <CostCell runtimeId={row.original.runtime.id} />,
     },
     {
       id: "cli",
-      header: "CLI",
+      header: t("runtimes", "cli"),
       size: COL_WIDTHS.cli,
       meta: { grow: true },
       cell: ({ row }) => (
         <CliCell
           runtime={row.original.runtime}
           latestCliVersion={latestCliVersion}
+          t={t}
         />
       ),
     },
@@ -251,9 +255,11 @@ function RuntimeNameCell({ runtime }: { runtime: AgentRuntime }) {
 function HealthCell({
   runtime,
   now,
+  t,
 }: {
   runtime: AgentRuntime;
   now: number;
+  t: ReturnType<typeof useAppI18n>["t"];
 }) {
   const health = deriveRuntimeHealth(runtime, now);
   const lastSeen = formatLastSeen(runtime.last_seen_at);
@@ -261,7 +267,7 @@ function HealthCell({
     <div className="flex min-w-0 items-center gap-1.5">
       <HealthIcon health={health} />
       <span className="block min-w-0 truncate text-sm">
-        {healthLabel(health)}
+        {healthLabel(health, t)}
         {health !== "online" && runtime.last_seen_at && (
           <span className="text-muted-foreground"> · {lastSeen}</span>
         )}
@@ -274,7 +280,7 @@ function HealthCell({
 // vocabulary applied to runtime-level aggregated counts. Offline runtime
 // rows still render `—` (the runtime's Health column already says it
 // all; redundant Idle here would just be noise). Online idle runtimes
-// show "Idle" explicitly to match the agent-side three-state symmetry.
+// show "Idle" explicit to match the agent-side three-state symmetry.
 function WorkloadCell({
   running,
   queued,
@@ -370,9 +376,11 @@ function CostCell({ runtimeId }: { runtimeId: string }) {
 function CliCell({
   runtime,
   latestCliVersion,
+  t,
 }: {
   runtime: AgentRuntime;
   latestCliVersion: string | null;
+  t: ReturnType<typeof useAppI18n>["t"];
 }) {
   if (runtime.runtime_mode === "cloud") {
     return <span className="text-xs text-muted-foreground/50">—</span>;
@@ -400,7 +408,7 @@ function CliCell({
     <div className="flex min-w-0 items-center gap-1 text-xs">
       {isManaged && (
         <span className="shrink-0 rounded-sm bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
-          Desktop
+          {t("runtimes", "desktop")}
         </span>
       )}
       <span
@@ -416,12 +424,12 @@ function CliCell({
             render={
               <ArrowUpCircle
                 className="h-3 w-3 shrink-0 text-warning"
-                aria-label="Update available"
+                aria-label={t("runtimes", "updateAvailable")}
               />
             }
           />
           <TooltipContent>
-            Update available: {latestCliVersion}
+            {t("runtimes", "updateAvailable")}: {latestCliVersion}
           </TooltipContent>
         </Tooltip>
       )}
@@ -471,6 +479,7 @@ function RowMenu({
   wsId: string;
   canDelete: boolean;
 }) {
+  const { t } = useAppI18n();
   const deleteMutation = useDeleteRuntime(wsId);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -481,12 +490,12 @@ function RowMenu({
   const handleDelete = () => {
     deleteMutation.mutate(runtime.id, {
       onSuccess: () => {
-        toast.success("Runtime deleted");
+        toast.success(t("runtimes", "runtimeDeleted"));
         setDeleteOpen(false);
       },
       onError: (e) => {
         toast.error(
-          e instanceof Error ? e.message : "Failed to delete runtime",
+          e instanceof Error ? e.message : t("runtimes", "failedDelete"),
         );
       },
     });
@@ -500,7 +509,7 @@ function RowMenu({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Row actions"
+              aria-label={t("runtimes", "rowActions")}
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
             />
@@ -519,7 +528,7 @@ function RowMenu({
             title="Only the runtime owner and workspace admins can delete this runtime"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            Delete
+            {t("runtimes", "deleteRuntime")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -532,23 +541,22 @@ function RowMenu({
       >
         <AlertDialogContent onClick={(e) => e.stopPropagation()}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Runtime</AlertDialogTitle>
+            <AlertDialogTitle>{t("runtimes", "deleteRuntimeTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{runtime.name}&rdquo;?
-              This action cannot be undone.
+              Are you sure you want to delete &quot;{runtime.name}&quot;?
               <span className="mt-2 block text-xs text-muted-foreground/80">
-                Only the runtime owner and workspace admins can delete a runtime.
+                {t("runtimes", "deletePermissionHint")}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("runtimes", "cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteMutation.isPending ? t("runtimes", "deleting") : t("runtimes", "deleteRuntime")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

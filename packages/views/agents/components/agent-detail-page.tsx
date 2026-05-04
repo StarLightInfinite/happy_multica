@@ -18,6 +18,7 @@ import { api } from "@multica/core/api";
 import { useAuthStore } from "@multica/core/auth";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useWorkspacePaths } from "@multica/core/paths";
+import { useAppI18n, type TranslateFn } from "@multica/core/i18n";
 import {
   agentListOptions,
   memberListOptions,
@@ -53,6 +54,7 @@ interface AgentDetailPageProps {
 }
 
 export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
+  const { t } = useAppI18n();
   const wsId = useWorkspaceId();
   const paths = useWorkspacePaths();
   const navigation = useNavigation();
@@ -88,9 +90,9 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
     try {
       await api.updateAgent(id, data as UpdateAgentRequest);
       qc.invalidateQueries({ queryKey: workspaceKeys.agents(wsId) });
-      toast.success("Agent updated");
+      toast.success(t("agents", "agentUpdated"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update agent");
+      toast.error(e instanceof Error ? e.message : t("agents", "failedUpdateAgent"));
       throw e;
     }
   };
@@ -99,9 +101,9 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
     try {
       await api.archiveAgent(id);
       qc.invalidateQueries({ queryKey: workspaceKeys.agents(wsId) });
-      toast.success("Agent archived");
+      toast.success(t("agents", "agentArchived"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to archive agent");
+      toast.error(e instanceof Error ? e.message : t("agents", "failedArchiveAgent"));
     }
   };
 
@@ -109,9 +111,9 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
     try {
       await api.restoreAgent(id);
       qc.invalidateQueries({ queryKey: workspaceKeys.agents(wsId) });
-      toast.success("Agent restored");
+      toast.success(t("agents", "agentRestored"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to restore agent");
+      toast.error(e instanceof Error ? e.message : t("agents", "failedRestoreAgent"));
     }
   };
 
@@ -124,15 +126,15 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
   if (!agent) {
     return (
       <div className="flex flex-1 min-h-0 flex-col">
-        <BackHeader paths={paths.agents()} title="Agents" />
+        <BackHeader paths={paths.agents()} title={t("agents", "agents")} />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
           <AlertCircle className="h-8 w-8 text-destructive" />
           <div>
-            <p className="text-sm font-medium">Agent not found</p>
+            <p className="text-sm font-medium">{t("agents", "agentNotFound")}</p>
             <p className="mt-1 text-xs text-muted-foreground">
               {agentsError instanceof Error
                 ? agentsError.message
-                : "This agent may have been archived or deleted."}
+                : t("agents", "agentArchivedOrDeleted")}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -142,14 +144,14 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
               size="sm"
               onClick={() => refetchAgents()}
             >
-              Try again
+              {t("agents", "tryAgain")}
             </Button>
             <Button
               type="button"
               size="sm"
               onClick={() => navigation.push(paths.agents())}
             >
-              Back to agents
+              {t("agents", "backToAgents")}
             </Button>
           </div>
         </div>
@@ -173,6 +175,7 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
         backHref={paths.agents()}
         canArchive={canEdit.allowed}
         onArchive={() => setConfirmArchive(true)}
+        t={t}
       />
 
       {!canEdit.allowed && (
@@ -189,7 +192,7 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
         <div className="flex shrink-0 items-center gap-2 border-b bg-muted/50 px-6 py-2 text-xs text-muted-foreground">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">
-            This agent is archived. It cannot be assigned or mentioned.
+            {t("agents", "agentArchivedBanner")}
           </span>
           {canEdit.allowed && (
             <Button
@@ -198,7 +201,7 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
               className="h-6 text-xs"
               onClick={() => handleRestore(agent.id)}
             >
-              Restore
+              {t("agents", "restore")}
             </Button>
           )}
         </div>
@@ -238,12 +241,10 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
               </div>
               <DialogHeader className="flex-1 gap-1">
                 <DialogTitle className="text-sm font-semibold">
-                  Archive agent?
+                  {t("agents", "archiveAgentTitle")}
                 </DialogTitle>
                 <DialogDescription className="text-xs">
-                  &quot;{agent.name}&quot; will be archived. It won&apos;t be
-                  assignable or mentionable, but all history is preserved. You
-                  can restore it later.
+                  {t("agents", "archiveAgentDesc").replace("{name}", agent.name)}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -252,7 +253,7 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
                 variant="ghost"
                 onClick={() => setConfirmArchive(false)}
               >
-                Cancel
+                {t("agents", "cancel")}
               </Button>
               <Button
                 variant="destructive"
@@ -262,7 +263,7 @@ export function AgentDetailPage({ agentId }: AgentDetailPageProps) {
                   navigation.push(paths.agents());
                 }}
               >
-                Archive
+                {t("agents", "archive")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -278,12 +279,14 @@ function DetailHeader({
   backHref,
   canArchive,
   onArchive,
+  t,
 }: {
   agent: Agent;
   presence: AgentPresenceDetail | null;
   backHref: string;
   canArchive: boolean;
   onArchive: () => void;
+  t: TranslateFn;
 }) {
   const isArchived = !!agent.archived_at;
   const av = presence ? availabilityConfig[presence.availability] : null;
@@ -300,7 +303,7 @@ function DetailHeader({
           className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Agents
+          {t("agents", "agents")}
         </AppLink>
         <span className="text-muted-foreground/40">/</span>
         <h1 className="truncate text-sm font-medium">{agent.name}</h1>
@@ -327,7 +330,7 @@ function DetailHeader({
               onClick={onArchive}
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Archive Agent
+              {t("agents", "archiveAgent")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

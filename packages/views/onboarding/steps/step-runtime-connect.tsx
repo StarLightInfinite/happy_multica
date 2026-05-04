@@ -285,7 +285,7 @@ function FancyView({
             disabled={!canContinue || submitting}
             onClick={handleContinue}
           >
-            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            <Loader2 className={cn("h-4 w-4 animate-spin", !submitting && "opacity-0")} />
             Continue
             <ArrowRight className="h-4 w-4" />
           </Button>

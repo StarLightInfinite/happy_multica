@@ -3,6 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAppI18n } from "@multica/core/i18n";
 import type {
   Issue,
   MemberWithUser,
@@ -45,6 +46,7 @@ export interface UseIssueActionsResult {
  * `issue` is null.
  */
 export function useIssueActions(issue: Issue | null): UseIssueActionsResult {
+  const { t } = useAppI18n();
   const wsId = useWorkspaceId();
   const paths = useWorkspacePaths();
   const navigation = useNavigation();
@@ -89,7 +91,7 @@ export function useIssueActions(issue: Issue | null): UseIssueActionsResult {
       if (!issueId) return;
       updateIssue.mutate(
         { id: issueId, ...updates },
-        { onError: () => toast.error("Failed to update issue") },
+        { onError: () => toast.error(t("issues", "failedToUpdate")) },
       );
       // Hint: assigning an agent to a backlog issue won't trigger execution
       // until the issue is moved to an active status.
@@ -125,9 +127,9 @@ export function useIssueActions(issue: Issue | null): UseIssueActionsResult {
         : path;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied");
+      toast.success(t("issues", "linkCopied"));
     } catch {
-      toast.error("Failed to copy link");
+      toast.error(t("issues", "failedToCopyLink"));
     }
   }, [paths, issueId, navigation]);
 

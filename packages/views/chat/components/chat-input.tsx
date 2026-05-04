@@ -99,7 +99,7 @@ export function ChatInput({
   return (
     <div
       className={cn(
-        "px-5 pb-3 pt-0",
+        "px-3 sm:px-5 pb-3 pt-0",
         // Outer wrapper carries the disabled cursor. Inner card sets
         // pointer-events-none, which suppresses hover (and therefore
         // any cursor of its own) — splitting the two layers lets hover
@@ -121,7 +121,7 @@ export function ChatInput({
         aria-disabled={noAgent || undefined}
       >
         {topSlot}
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
+        <div className="flex-1 min-h-0 overflow-y-auto px-2 sm:px-3 py-2">
           <ContentEditor
             // Remount the editor when the active session changes so its
             // uncontrolled defaultValue picks up the new session's draft.

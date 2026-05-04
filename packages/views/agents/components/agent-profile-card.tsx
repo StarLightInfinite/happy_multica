@@ -11,6 +11,7 @@ import {
 import { agentListOptions, memberListOptions } from "@multica/core/workspace/queries";
 import { runtimeListOptions } from "@multica/core/runtimes/queries";
 import { useWorkspacePaths } from "@multica/core/paths";
+import { useAppI18n } from "@multica/core/i18n";
 import { ActorAvatar as ActorAvatarBase } from "@multica/ui/components/common/actor-avatar";
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
 import { AppLink } from "../../navigation";
@@ -23,6 +24,7 @@ interface AgentProfileCardProps {
 }
 
 export function AgentProfileCard({ agentId }: AgentProfileCardProps) {
+  const { t } = useAppI18n();
   const wsId = useWorkspaceId();
   const p = useWorkspacePaths();
   const { data: agents = [], isLoading: agentsLoading } = useQuery(agentListOptions(wsId));
@@ -45,7 +47,7 @@ export function AgentProfileCard({ agentId }: AgentProfileCardProps) {
 
   if (!agent) {
     return (
-      <div className="text-xs text-muted-foreground">Agent unavailable</div>
+      <div className="text-xs text-muted-foreground">{t("agents", "agentUnavailable")}</div>
     );
   }
 
@@ -85,7 +87,7 @@ export function AgentProfileCard({ agentId }: AgentProfileCardProps) {
             {!isArchived && <VisibilityBadge value={agent.visibility} compact />}
             {isArchived && (
               <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                Archived
+                {t("agents", "archived")}
               </span>
             )}
           </div>
@@ -98,7 +100,7 @@ export function AgentProfileCard({ agentId }: AgentProfileCardProps) {
             href={p.agentDetail(agent.id)}
             className="mr-1 mt-0.5 shrink-0 text-xs font-normal text-brand opacity-0 transition-opacity group-hover:opacity-100"
           >
-            Detail →
+            {t("agents", "detail")}
           </AppLink>
         )}
       </div>
@@ -118,7 +120,7 @@ export function AgentProfileCard({ agentId }: AgentProfileCardProps) {
         {agent.skills.length > 0 && (
           <SkillsRow skills={agent.skills.map((s) => s.name)} />
         )}
-        {owner && <MetaRow label="Owner" value={owner.name} />}
+        {owner && <MetaRow label={t("agents", "owner")} value={owner.name} />}
       </div>
     </div>
   );
@@ -162,6 +164,7 @@ function RuntimeRow({
   agent: Agent;
   runtime: AgentRuntime | null;
 }) {
+  const { t } = useAppI18n();
   const isCloud = agent.runtime_mode === "cloud";
   const health: RuntimeHealth = isCloud
     ? "online"
@@ -171,7 +174,7 @@ function RuntimeRow({
   const label = runtime?.name ?? (isCloud ? "Cloud" : "Unknown runtime");
   return (
     <div className="flex items-center gap-1.5">
-      <span className="w-12 shrink-0 text-muted-foreground">Runtime</span>
+      <span className="w-12 shrink-0 text-muted-foreground">{t("agents", "runtime")}</span>
       <HealthIcon health={health} className="h-3 w-3 shrink-0" />
       <span className="min-w-0 truncate" title={label}>
         {label}
@@ -200,11 +203,12 @@ function MetaRow({
 }
 
 function SkillsRow({ skills }: { skills: string[] }) {
+  const { t } = useAppI18n();
   const visible = skills.slice(0, 3);
   const overflow = skills.length - visible.length;
   return (
     <div className="flex items-center gap-1.5">
-      <span className="w-12 shrink-0 text-muted-foreground">Skills</span>
+      <span className="w-12 shrink-0 text-muted-foreground">{t("agents", "skills")}</span>
       <div className="flex min-w-0 flex-wrap gap-1">
         {visible.map((s) => (
           <span

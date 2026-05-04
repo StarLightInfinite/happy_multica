@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Plus, Save, Trash2 } from "lucide-react";
 import type { Agent, RuntimeDevice } from "@multica/core/types";
 import { createSafeId } from "@multica/core/utils";
+import { useAppI18n } from "@multica/core/i18n";
 import { Button } from "@multica/ui/components/ui/button";
 import { Input } from "@multica/ui/components/ui/input";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ export function CustomArgsTab({
   onSave: (updates: Partial<Agent>) => Promise<void>;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
+  const { t } = useAppI18n();
   const [entries, setEntries] = useState<ArgEntry[]>(
     argsToEntries(agent.custom_args ?? []),
   );
@@ -68,9 +70,9 @@ export function CustomArgsTab({
     setSaving(true);
     try {
       await onSave({ custom_args: currentArgs });
-      toast.success("Custom arguments saved");
+      toast.success(t("agents", "customArgsSaved"));
     } catch {
-      toast.error("Failed to save custom arguments");
+      toast.error(t("agents", "failedSaveCustomArgs"));
     } finally {
       setSaving(false);
     }
@@ -83,16 +85,11 @@ export function CustomArgsTab({
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">
-            Additional CLI arguments appended to the agent command at launch.
-            Multi-token flags can share one row — they&apos;ll be split on
-            whitespace before being passed to the CLI.
+            {t("agents", "customArgsDesc")}
           </p>
           {launchHeader && (
             <p className="text-xs text-muted-foreground">
-              Launch mode:{" "}
-              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
-                {launchHeader} &lt;your args&gt;
-              </code>
+              {t("agents", "launchModeHint").replace("{header}", launchHeader)}
             </p>
           )}
         </div>
@@ -104,7 +101,7 @@ export function CustomArgsTab({
           className="shrink-0"
         >
           <Plus className="h-3 w-3" />
-          Add
+          {t("agents", "add")}
         </Button>
       </div>
 
@@ -115,7 +112,7 @@ export function CustomArgsTab({
               <Input
                 value={entry.value}
                 onChange={(e) => updateEntry(index, e.target.value)}
-                placeholder="--flag value"
+                placeholder={t("agents", "flagPlaceholder")}
                 className="flex-1 font-mono text-xs"
               />
               <Button
@@ -123,7 +120,7 @@ export function CustomArgsTab({
                 size="icon-sm"
                 onClick={() => removeEntry(index)}
                 className="text-muted-foreground hover:text-destructive"
-                aria-label="Remove argument"
+                aria-label={t("agents", "removeArgument")}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -134,7 +131,7 @@ export function CustomArgsTab({
 
       <div className="flex items-center justify-end gap-3">
         {dirty && (
-          <span className="text-xs text-muted-foreground">Unsaved changes</span>
+          <span className="text-xs text-muted-foreground">{t("agents", "unsavedChanges")}</span>
         )}
         <Button onClick={handleSave} disabled={!dirty || saving} size="sm">
           {saving ? (
@@ -142,7 +139,7 @@ export function CustomArgsTab({
           ) : (
             <Save className="h-3.5 w-3.5" />
           )}
-          Save
+          {t("agents", "save")}
         </Button>
       </div>
     </div>

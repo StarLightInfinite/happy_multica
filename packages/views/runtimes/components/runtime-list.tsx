@@ -20,7 +20,7 @@ import { agentTaskSnapshotOptions } from "@multica/core/agents";
 import { paths, useWorkspaceSlug } from "@multica/core/paths";
 import { DataTable } from "@multica/ui/components/ui/data-table";
 import { useNavigation } from "../../navigation";
-import { type RuntimeRow, createRuntimeColumns } from "./runtime-columns";
+import { type RuntimeRow, useRuntimeColumns } from "./runtime-columns";
 
 interface RuntimeWorkload {
   agentIds: string[];
@@ -134,16 +134,12 @@ export function RuntimeList({
     }));
   }, [runtimes, memberById, workloadIndex, isAdmin, user]);
 
-  const columns = useMemo(
-    () =>
-      createRuntimeColumns({
-        showOwner,
-        latestCliVersion,
-        wsId,
-        now,
-      }),
-    [showOwner, latestCliVersion, wsId, now],
-  );
+  const columns = useRuntimeColumns({
+    showOwner,
+    latestCliVersion,
+    wsId,
+    now,
+  });
 
   const table = useReactTable({
     data: rows,

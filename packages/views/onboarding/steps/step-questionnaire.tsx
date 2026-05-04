@@ -9,7 +9,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@multica/ui/components/ui/button";
+import { cn } from "@multica/ui/lib/utils";
 import { useScrollFade } from "@multica/ui/hooks/use-scroll-fade";
+import { useAppI18n } from "@multica/core/i18n";
 import type {
   QuestionnaireAnswers,
   Role,
@@ -20,18 +22,6 @@ import { DragStrip } from "@multica/views/platform";
 import { StepHeader } from "../components/step-header";
 import { OptionCard, OtherOptionCard } from "../components/option-card";
 
-/**
- * Step 1 — three-question user profile.
- *
- * Classic app-shell layout: the left column is 3-region
- * (header / scrollable middle / footer) so the progress indicator
- * and the Continue CTA both stay visible regardless of how far the
- * user has scrolled into the questions. The right "Why we ask" panel
- * is a separate grid column that scrolls independently.
- *
- * Below lg the right panel hides and the left column fills the
- * viewport — 3-region layout still applies.
- */
 export function StepQuestionnaire({
   initial,
   onSubmit,
@@ -41,6 +31,7 @@ export function StepQuestionnaire({
   onSubmit: (answers: QuestionnaireAnswers) => void | Promise<void>;
   onBack?: () => void;
 }) {
+  const { t } = useAppI18n();
   const [answers, setAnswers] = useState<QuestionnaireAnswers>(initial);
   const [submitting, setSubmitting] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
@@ -65,11 +56,6 @@ export function StepQuestionnaire({
       use_case_other: v === "other" ? a.use_case_other : null,
     }));
 
-  // A question counts as "answered" when it has a concrete selection,
-  // and — if that selection is "other" — its free-text field is non-empty.
-  // Same rule that used to drive canContinue; we compute the per-question
-  // booleans once here and derive both the count (footer indicator) and
-  // the overall gate from it.
   const answeredCount = useMemo(() => {
     const q1 =
       answers.team_size !== null &&
@@ -98,10 +84,8 @@ export function StepQuestionnaire({
 
   return (
     <div className="animate-onboarding-enter grid h-full min-h-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_480px]">
-      {/* Left column — DragStrip + 3-region app shell */}
       <div className="flex min-h-0 flex-col">
         <DragStrip />
-        {/* Fixed header — Back + progress indicator */}
         <header className="flex shrink-0 items-center gap-4 bg-background px-6 py-3 sm:px-10 md:px-14 lg:px-16">
           {onBack ? (
             <button
@@ -110,7 +94,7 @@ export function StepQuestionnaire({
               className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Back
+              {t("onboarding", "back")}
             </button>
           ) : (
             <span aria-hidden className="w-0" />
@@ -120,13 +104,6 @@ export function StepQuestionnaire({
           </div>
         </header>
 
-        {/* Scrollable middle — the only region that scrolls vertically.
-            `min-h-0` is required on a flex-1 child inside a flex column
-            so it can shrink below its content height and let
-            overflow-y-auto activate. `useScrollFade` applies a dynamic
-            mask-image gradient so content softly fades into the header /
-            footer at the edges as the user scrolls, replacing the hard
-            border separator. */}
         <main
           ref={mainRef}
           style={fadeStyle}
@@ -134,27 +111,27 @@ export function StepQuestionnaire({
         >
           <div className="mx-auto w-full max-w-[620px] px-6 py-10 sm:px-10 md:px-14 lg:px-0 lg:py-14">
             <div className="mb-2 text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-              Before we start
+              {t("onboarding", "beforeWeStart")}
             </div>
             <h1 className="text-balance font-serif text-[36px] font-medium leading-[1.1] tracking-tight text-foreground">
-              Three questions to get to know you.
+              {t("onboarding", "threeQuestions")}
             </h1>
 
             <div className="mt-10 flex flex-col gap-7">
               <QuestionBlock
                 num={1}
-                question="Who will use this workspace?"
-                ariaLabel="Who will use this workspace?"
+                question={t("onboarding", "whoWillUse")}
+                ariaLabel={t("onboarding", "whoWillUse")}
               >
                 <OptionCard
                   selected={answers.team_size === "solo"}
                   onSelect={() => setTeamSize("solo")}
-                  label="Just me"
+                  label={t("onboarding", "justMe")}
                 />
                 <OptionCard
                   selected={answers.team_size === "team"}
                   onSelect={() => setTeamSize("team")}
-                  label="My team (2–10 people)"
+                  label={t("onboarding", "myTeam")}
                 />
                 <OtherOptionCard
                   selected={answers.team_size === "other"}
@@ -163,34 +140,34 @@ export function StepQuestionnaire({
                   onOtherChange={(v) =>
                     setAnswers((a) => ({ ...a, team_size_other: v }))
                   }
-                  placeholder="e.g. a small community I help run"
+                  placeholder={t("onboarding", "soloDesc")}
                 />
               </QuestionBlock>
 
               <QuestionBlock
                 num={2}
-                question="What best describes you?"
-                ariaLabel="What best describes you?"
+                question={t("onboarding", "whatDescribesYou")}
+                ariaLabel={t("onboarding", "whatDescribesYou")}
               >
                 <OptionCard
                   selected={answers.role === "developer"}
                   onSelect={() => setRole("developer")}
-                  label="Software developer"
+                  label={t("onboarding", "developer")}
                 />
                 <OptionCard
                   selected={answers.role === "product_lead"}
                   onSelect={() => setRole("product_lead")}
-                  label="Product or project lead"
+                  label={t("onboarding", "productLead")}
                 />
                 <OptionCard
                   selected={answers.role === "writer"}
                   onSelect={() => setRole("writer")}
-                  label="Writer or content creator"
+                  label={t("onboarding", "writer")}
                 />
                 <OptionCard
                   selected={answers.role === "founder"}
                   onSelect={() => setRole("founder")}
-                  label="Founder or operator"
+                  label={t("onboarding", "founder")}
                 />
                 <OtherOptionCard
                   selected={answers.role === "other"}
@@ -199,34 +176,34 @@ export function StepQuestionnaire({
                   onOtherChange={(v) =>
                     setAnswers((a) => ({ ...a, role_other: v }))
                   }
-                  placeholder="e.g. researcher, designer, ops lead"
+                  placeholder={t("onboarding", "researcher")}
                 />
               </QuestionBlock>
 
               <QuestionBlock
                 num={3}
-                question="What do you want to do with Multica?"
-                ariaLabel="What do you want to do with Multica?"
+                question={t("onboarding", "whatDoWithMultica")}
+                ariaLabel={t("onboarding", "whatDoWithMultica")}
               >
                 <OptionCard
                   selected={answers.use_case === "coding"}
                   onSelect={() => setUseCase("coding")}
-                  label="Write and ship code"
+                  label={t("onboarding", "writeShipCode")}
                 />
                 <OptionCard
                   selected={answers.use_case === "planning"}
                   onSelect={() => setUseCase("planning")}
-                  label="Plan and manage projects"
+                  label={t("onboarding", "planManage")}
                 />
                 <OptionCard
                   selected={answers.use_case === "writing_research"}
                   onSelect={() => setUseCase("writing_research")}
-                  label="Research or write"
+                  label={t("onboarding", "researchWrite")}
                 />
                 <OptionCard
                   selected={answers.use_case === "explore"}
                   onSelect={() => setUseCase("explore")}
-                  label="I'm just exploring for now"
+                  label={t("onboarding", "justExploring")}
                 />
                 <OtherOptionCard
                   selected={answers.use_case === "other"}
@@ -235,34 +212,32 @@ export function StepQuestionnaire({
                   onOtherChange={(v) =>
                     setAnswers((a) => ({ ...a, use_case_other: v }))
                   }
-                  placeholder="e.g. automate my weekly reports"
+                  placeholder={t("onboarding", "researcher")}
                 />
               </QuestionBlock>
             </div>
           </div>
         </main>
 
-        {/* Fixed footer — progress counter + Continue */}
         <footer className="flex shrink-0 items-center justify-end gap-4 bg-background px-6 py-4 sm:px-10 md:px-14 lg:px-16">
           <span
             aria-live="polite"
             className="text-xs tabular-nums text-muted-foreground"
           >
-            {answeredCount} of 3 answered
+            {answeredCount} {t("onboarding", "of")} 3 {t("onboarding", "answered")}
           </span>
           <Button
             size="lg"
             disabled={!canContinue || submitting}
             onClick={submit}
           >
-            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Continue
+            <Loader2 className={cn("h-4 w-4 animate-spin", !submitting && "opacity-0")} />
+            {t("onboarding", "continue")}
             <ArrowRight className="h-4 w-4" />
           </Button>
         </footer>
       </div>
 
-      {/* Right — DragStrip + "Why we ask" side panel, independent scroll */}
       <aside className="hidden min-h-0 border-l bg-muted/40 lg:flex lg:flex-col">
         <DragStrip />
         <div className="min-h-0 flex-1 overflow-y-auto px-12 py-12">
@@ -300,31 +275,33 @@ function QuestionBlock({
 }
 
 function WhyWeAsk() {
+  const { t } = useAppI18n();
+
   return (
     <div className="flex max-w-[380px] flex-col gap-8">
       <section className="flex flex-col gap-4">
         <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-          Why three questions
+          {t("onboarding", "whyThreeQuestions")}
         </div>
         <h2 className="font-serif text-[22px] font-medium leading-[1.25] tracking-tight text-foreground">
-          So you land running.
+          {t("onboarding", "soYouLandRunning")}
         </h2>
       </section>
 
       <section className="flex flex-col gap-4">
         <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-          What you get
+          {t("onboarding", "whatYouGet")}
         </div>
         <div className="flex flex-col gap-4">
           <UnlockItem
             icon={<PenLine className="h-4 w-4" />}
-            title="A starter project, tailored"
-            body="A Getting Started checklist shaped by your answers."
+            title={t("onboarding", "starterProjectTailored")}
+            body={t("onboarding", "starterProjectBody")}
           />
           <UnlockItem
             icon={<Sparkles className="h-4 w-4" />}
-            title="A head start with agents"
-            body="Connect a runtime and we'll pick a template for your role — plus write its first task."
+            title={t("onboarding", "headStartAgents")}
+            body={t("onboarding", "headStartAgentsBody")}
           />
         </div>
       </section>
@@ -335,7 +312,7 @@ function WhyWeAsk() {
         rel="noopener noreferrer"
         className="self-start text-[13px] text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
       >
-        Learn how agents work →
+        {t("onboarding", "learnHowAgentsWork")}
       </a>
     </div>
   );

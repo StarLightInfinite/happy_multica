@@ -30,19 +30,22 @@ import {
   DailyCostChart,
   HourlyActivityChart,
   ActivityHeatmap,
-  costStackConfig,
+  useCostStackConfig,
 } from "./charts";
+import { useAppI18n } from "@multica/core/i18n";
 
 // Single source of truth for the period selector. KPIs, the When-chart, the
 // Cost-by tabs, and the CSV export all read from the same `days` value so
 // the labels ("· 30D") and the data slice never disagree.
-const TIME_RANGES = [
-  { label: "7d", days: 7 },
-  { label: "30d", days: 30 },
-  { label: "90d", days: 90 },
-] as const;
+function useTimeRanges() {
+  return useMemo(() => [
+    { label: "7d", days: 7 },
+    { label: "30d", days: 30 },
+    { label: "90d", days: 90 },
+  ], []);
+}
 
-type TimeRange = (typeof TIME_RANGES)[number]["days"];
+type TimeRange = 7 | 30 | 90;
 
 // ---------------------------------------------------------------------------
 // Local segmented control. shadcn's Tabs is wired for full tab pages with
@@ -103,10 +106,12 @@ function fmtMoney(n: number): string {
 // ---------------------------------------------------------------------------
 
 export function UsageSection({ runtimeId }: { runtimeId: string }) {
+  const { t } = useAppI18n();
   const { data: usage = [], isLoading: loading } = useQuery(
     runtimeUsageOptions(runtimeId, 180),
   );
   const [days, setDays] = useState<TimeRange>(30);
+  const timeRanges = useTimeRanges();
 
   if (loading) return <UsageSkeleton />;
   if (usage.length === 0) return <UsageEmpty />;
@@ -136,12 +141,12 @@ export function UsageSection({ runtimeId }: { runtimeId: string }) {
           its tab disables this control to telegraph that. */}
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
-          Period
+          {t("runtimes", "period")}
         </span>
         <Segmented
           value={days}
-          onChange={setDays}
-          options={TIME_RANGES.map((r) => ({
+          onChange={(v) => setDays(v as TimeRange)}
+          options={timeRanges.map((r) => ({
             label: r.label,
             value: r.days,
           }))}
@@ -152,7 +157,7 @@ export function UsageSection({ runtimeId }: { runtimeId: string }) {
           divider; the big numbers carry the visual weight of the page. */}
       <div className="grid grid-cols-3 divide-x rounded-lg border bg-card">
         <KpiCard
-          label={`Cost · ${days}D`}
+          label={`${t("runtimes", "cost")} · ${days}D`}
           value={fmtMoney(totals.cost)}
           hint={
             costDelta == null ? undefined : (
@@ -172,21 +177,21 @@ export function UsageSection({ runtimeId }: { runtimeId: string }) {
           }
         />
         <KpiCard
-          label={`Cache savings · ${days}D`}
+          label={`${t("runtimes", "cacheSavings")} · ${days}D`}
           value={fmtMoney(totals.cacheSavings)}
           accent={totals.cacheSavings > 0 ? "success" : "default"}
           hint={
             <span>
-              {cacheHitRate}% hit · {formatTokens(totals.cacheRead)} reads
+              {`${cacheHitRate.toFixed(1)}% hit rate`} · {formatTokens(totals.cacheRead)} reads
             </span>
           }
         />
         <KpiCard
-          label={`Tokens · ${days}D`}
+          label={`${t("runtimes", "tokens")} · ${days}D`}
           value={formatTokens(tokensTotal)}
           hint={
             <span>
-              in {formatTokens(totals.input)} · out {formatTokens(totals.output)}
+              {t("runtimes", "inLabel")} {formatTokens(totals.input)} · {t("runtimes", "outLabel")} {formatTokens(totals.output)}
             </span>
           }
         />
@@ -235,6 +240,7 @@ function WhenChart({
   filtered: RuntimeUsage[];
   days: TimeRange;
 }) {
+  const { t } = useAppI18n();
   const [tab, setTab] = useState<WhenTab>("daily");
 
   // Lazy-fetch hourly cost — only needed when its tab is active. Daily and
@@ -258,15 +264,15 @@ function WhenChart({
     <div className="rounded-lg border bg-card p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h4 className="text-sm font-semibold">When this runtime spent</h4>
+          <h4 className="text-sm font-semibold">{t("runtimes", "whenSpent")}</h4>
           <Segmented
             value={tab}
             onChange={setTab}
             options={
               [
-                { label: "Daily", value: "daily" },
-                { label: "Hourly", value: "hourly" },
-                { label: "Heatmap", value: "heatmap" },
+                { label: t("runtimes", "daily"), value: "daily" },
+                { label: t("runtimes", "hourly"), value: "hourly" },
+                { label: t("runtimes", "heatmap"), value: "heatmap" },
               ] as const
             }
           />
@@ -279,7 +285,7 @@ function WhenChart({
           squares; the long view is the whole point). */}
       {tab === "heatmap" && (
         <p className="mb-2 text-center text-xs text-muted-foreground">
-          Last 26 weeks · daily $ intensity (period selector ignored here)
+          {t("runtimes", "heatmapCaption")}
         </p>
       )}
 
@@ -329,6 +335,7 @@ function HourlyTab({
 // ---------------------------------------------------------------------------
 
 function EmptyChartState({ usage }: { usage: RuntimeUsage[] }) {
+  const { t } = useAppI18n();
   const hasTokens = usage.some(
     (u) =>
       u.input_tokens + u.output_tokens + u.cache_read_tokens + u.cache_write_tokens >
@@ -341,23 +348,23 @@ function EmptyChartState({ usage }: { usage: RuntimeUsage[] }) {
       <BarChart3 className="h-5 w-5 text-muted-foreground/50" />
       {!hasTokens ? (
         <p className="text-xs text-muted-foreground">
-          No usage in this period.
+          {t("runtimes", "noUsagePeriod")}
         </p>
       ) : unmapped.length > 0 ? (
         <>
           <p className="text-xs text-muted-foreground">
-            Tokens recorded but pricing missing for:
+            {t("runtimes", "pricingMissing")}
           </p>
           <p className="font-mono text-[11px] text-foreground">
             {unmapped.join(", ")}
           </p>
           <p className="text-[11px] text-muted-foreground/70">
-            Add to MODEL_PRICING in packages/views/runtimes/utils.ts
+            {t("runtimes", "addPricing")}
           </p>
         </>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Tokens recorded but cost calculation returned $0.
+          {t("runtimes", "costZeroHint")}
         </p>
       )}
     </div>
@@ -370,15 +377,16 @@ function EmptyChartState({ usage }: { usage: RuntimeUsage[] }) {
 // ---------------------------------------------------------------------------
 
 function ChartLegend() {
+  const config = useCostStackConfig();
   const items = [
-    { label: costStackConfig.input.label, color: "var(--color-chart-1)" },
-    { label: costStackConfig.output.label, color: "var(--color-chart-2)" },
-    { label: costStackConfig.cacheWrite.label, color: "var(--color-chart-3)" },
+    { label: config.input?.label ?? "Input", color: "var(--color-chart-1)" },
+    { label: config.output?.label ?? "Output", color: "var(--color-chart-2)" },
+    { label: config.cacheWrite?.label ?? "Cache Write", color: "var(--color-chart-3)" },
   ];
   return (
     <div className="flex items-center gap-3 text-xs text-muted-foreground">
-      {items.map((it) => (
-        <span key={it.label} className="inline-flex items-center gap-1.5">
+      {items.map((it, i) => (
+        <span key={i} className="inline-flex items-center gap-1.5">
           <span
             className="h-2 w-2 rounded-sm"
             style={{ background: it.color }}
@@ -405,6 +413,7 @@ function CostByBlock({
   days: number;
   usage: RuntimeUsage[];
 }) {
+  const { t } = useAppI18n();
   const [tab, setTab] = useState<"agent" | "model">("agent");
 
   // by-agent is server-side aggregation (fetched lazily on tab activation).
@@ -422,21 +431,23 @@ function CostByBlock({
 
   const caption =
     tab === "agent"
-      ? `${byAgent.length} agent${byAgent.length === 1 ? "" : "s"} on this runtime`
-      : `${byModel.length} model${byModel.length === 1 ? "" : "s"} used`;
+      ? `${byAgent.length} agent${byAgent.length === 1 ? "" : "s"}`
+      : `${byModel.length} model${byModel.length === 1 ? "" : "s"}`;
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
         <div className="flex items-center gap-3">
-          <h4 className="text-sm font-semibold">Cost by {tab}</h4>
+          <h4 className="text-sm font-semibold">
+            {tab === "agent" ? t("runtimes", "byAgent") : t("runtimes", "byModel")}
+          </h4>
           <Segmented
             value={tab}
             onChange={setTab}
             options={
               [
-                { label: "By agent", value: "agent" },
-                { label: "By model", value: "model" },
+                { label: t("runtimes", "byAgent"), value: "agent" },
+                { label: t("runtimes", "byModel"), value: "model" },
               ] as const
             }
           />
@@ -481,16 +492,18 @@ function CostByBlock({
 function CostByList({
   rows,
   renderKey,
-  emptyHint = "No usage in this period.",
+  emptyHint,
 }: {
   rows: CostByKey[];
   renderKey: (key: string) => React.ReactNode;
   emptyHint?: string;
 }) {
+  const { t } = useAppI18n();
+
   if (rows.length === 0) {
     return (
       <p className="py-4 text-center text-xs text-muted-foreground">
-        {emptyHint}
+        {emptyHint ?? t("runtimes", "noUsagePeriod")}
       </p>
     );
   }
@@ -531,6 +544,7 @@ function CostByList({
 // ---------------------------------------------------------------------------
 
 function FoldedRow({ usage }: { usage: RuntimeUsage[] }) {
+  const { t } = useAppI18n();
   const [open, setOpen] = useState(false);
   return (
     <div className="border-t pt-3">
@@ -542,7 +556,7 @@ function FoldedRow({ usage }: { usage: RuntimeUsage[] }) {
         <ChevronRight
           className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""}`}
         />
-        Daily breakdown table
+        {t("runtimes", "dailyBreakdown")}
       </button>
       {open && (
         <div className="mt-3 rounded-md border p-4">
@@ -554,6 +568,7 @@ function FoldedRow({ usage }: { usage: RuntimeUsage[] }) {
 }
 
 function DailyBreakdownTable({ usage }: { usage: RuntimeUsage[] }) {
+  const { t } = useAppI18n();
   const byDate = new Map<string, RuntimeUsage[]>();
   for (const u of usage) {
     const existing = byDate.get(u.date) ?? [];
@@ -563,12 +578,12 @@ function DailyBreakdownTable({ usage }: { usage: RuntimeUsage[] }) {
   return (
     <div className="rounded-lg border">
       <div className="grid grid-cols-[100px_1fr_80px_80px_80px_80px] gap-2 border-b px-3 py-2 text-xs font-medium text-muted-foreground">
-        <div>Date</div>
-        <div>Model</div>
-        <div className="text-right">Input</div>
-        <div className="text-right">Output</div>
-        <div className="text-right">Cache R</div>
-        <div className="text-right">Cache W</div>
+        <div>{t("runtimes", "date")}</div>
+        <div>{t("runtimes", "model")}</div>
+        <div className="text-right">{t("runtimes", "input")}</div>
+        <div className="text-right">{t("runtimes", "output")}</div>
+        <div className="text-right">{t("runtimes", "cacheRead")}</div>
+        <div className="text-right">{t("runtimes", "cacheWrite")}</div>
       </div>
       <div className="max-h-64 overflow-y-auto divide-y">
         {[...byDate.entries()].map(([date, rows]) =>
@@ -614,10 +629,11 @@ function UsageSkeleton() {
 }
 
 function UsageEmpty() {
+  const { t } = useAppI18n();
   return (
     <div className="flex flex-col items-center rounded-lg border border-dashed py-8">
       <BarChart3 className="h-5 w-5 text-muted-foreground/40" />
-      <p className="mt-2 text-xs text-muted-foreground">No usage data yet</p>
+      <p className="mt-2 text-xs text-muted-foreground">{t("runtimes", "noUsageData")}</p>
     </div>
   );
 }
@@ -665,4 +681,3 @@ function computeTotals(rows: RuntimeUsage[]): UsageTotals {
     { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, cacheSavings: 0 },
   );
 }
-
